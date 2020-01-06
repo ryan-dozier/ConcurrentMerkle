@@ -18,7 +18,7 @@
 #endif
 
 #include <atomic>
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <iostream>
 
@@ -49,12 +49,13 @@ template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
     T val;
+    std::atomic<std::size_t> hash;
+
     MerkleNode(size_t remHash, T &v);
     MerkleNode();
     ~MerkleNode(){};
-    std::atomic<std::size_t> hash;
-    std::atomic<MerkleNode*> left;
-    std::atomic<MerkleNode*> right;
+    std::atomic<MerkleNode *> left;
+    std::atomic<MerkleNode *> right;
 private:
 };
 

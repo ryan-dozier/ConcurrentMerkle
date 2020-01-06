@@ -6,23 +6,24 @@
 
 template<typename T>
 MerkleTree<T>::MerkleTree() {
-    root.store(MerkleNode());
+    this->root.store(new MerkleNode());
 }
 
 template<typename T>
 MerkleTree<T>::MerkleNode::MerkleNode(size_t _hash, T &v) : val(v) {
-    hash = _hash;
-    left.store(nullptr);
-    right.store(nullptr);
+    this->hash.store(_hash);
+    this->left.store(nullptr);
+    this->right.store(nullptr);
 }
 
 template<typename T>
 MerkleTree<T>::MerkleNode::MerkleNode() {
-    hash = 0;
-    val = NULL;
-    left.store(nullptr);
-    right.store(nullptr);
+    this->hash.store(0);
+    this->val = NULL;
+    this->left.store(nullptr);
+    this->right.store(nullptr);
 }
+
 
 template<typename T>
 void MerkleTree<T>::insert(T &v) {
@@ -38,9 +39,9 @@ void MerkleTree<T>::remove(T v) {
 
 template<typename T>
 void MerkleTree<T>::update(std::size_t hash, T &val) {
-    MerkleNode* walker = this->root.load();
-    MerkleNode* next;
-    std::vector<MerkleNode*> visited;
+    MerkleNode * walker = this->root.load();
+    MerkleNode * next;
+    std::vector<MerkleNode *> visited;
     short dir;
 
     while(true) {
@@ -60,7 +61,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
         if(next == nullptr) {
             // CASE HashNode (nonleaf)
             if(walker->val == NULL) {
-                MerkleNode* newNode = new MerkleNode(hash, val);
+                MerkleNode * newNode = new MerkleNode(hash, val);
 
                 switch (dir) {
                     case LEFT :
@@ -75,7 +76,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
             }
             // CASE DataNode (leaf)
             else {
-                MerkleNode* newNode = new MerkleNode();
+                MerkleNode * newNode = new MerkleNode();
 
                 switch (walker->hash % 2) {
                     case LEFT :
@@ -109,7 +110,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
     while(!visited.empty()) {
 
         walker = visited.pop_back();
-        MerkleNode* left, right;
+        MerkleNode * left, right;
         std::size_t temp;
         std::size_t newVal;
 
@@ -123,7 +124,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
             if(left != nullptr)
                 newVal += left->hash.load();
             else if(right != nullptr)
-                newVal += right.hash.load();
+                newVal += right->hash.load();
 
             // compute the new hashes
             newVal = hash_hashes(newVal);
@@ -144,7 +145,7 @@ bool MerkleTree<T>::contains(T val) {
 template<typename T>
 bool MerkleTree<T>::contains(std::size_t hash) {
     bool result = false;
-    MerkleNode* walker = this->root.load();
+    MerkleNode * walker = this->root.load();
     for(int i = 0; i < MAXBITS; i++) {
 
         if(walker->val != NULL && walker->hash == hash) {
