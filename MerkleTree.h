@@ -5,6 +5,18 @@
 #ifndef MERKLETREE_H
 #define MERKLETREE_H
 
+
+// Check GCC
+#if __GNUC__
+#if __x86_64__ || __ppc64__
+#define ENVIRONMENT64
+#define MAXBITS 64
+#else
+#define ENVIRONMENT32
+#define MAXBITS 32
+#endif
+#endif
+
 #include <atomic>
 #include <math.h>
 #include <string>
@@ -16,33 +28,30 @@
 template<typename T>
 class MerkleTree {
 public:
+    static std::hash<T> hash_hashes;
+    static std::hash<T> hash_data;
     class MerkleNode;
-    MerkleTree(char* (*const hashFunc)(T val));
+    MerkleTree();
     ~MerkleTree();
     void insert(T &v);
+    void remove(T v);
     bool validate();
     bool contains(T val);
     bool contains(std::size_t hash);
-    bool delete_hash(std::size_t hash);
     char* getRootValue(){ return root.load(); };
 
-    char* (*const hash_function)(T val);
 private:
+    void update(size_t hash, T &val);
     std::atomic<MerkleNode*> root;
 };
 
 template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
-    //bool contains(std::size_t hash);
-    //bool insert(std::size_t key, T &v);
-    //virtual bool delete_hash(std::string hash);
+    T val;
+    std::atomic<std::size_t> hash;
     std::atomic<MerkleNode *> left { nullptr };
     std::atomic<MerkleNode *> right { nullptr };
-private:
-
 };
-
-
 
 #endif //MERKLETREE_H
