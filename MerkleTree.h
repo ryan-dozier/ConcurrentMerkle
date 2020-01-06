@@ -18,7 +18,7 @@
 #endif
 
 #include <atomic>
-#include <cmath>
+#include <math.h>
 #include <string>
 #include <iostream>
 

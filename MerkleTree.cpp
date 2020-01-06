@@ -148,7 +148,7 @@ bool MerkleTree<T>::contains(std::size_t hash) {
     MerkleNode * walker = this->root.load();
     for(int i = 0; i < MAXBITS; i++) {
 
-        if(walker->val != NULL && walker->hash == hash) {
+        if(walker->val != NULL && walker->hash.load() == hash) {
             result = true;
             break;
         }
