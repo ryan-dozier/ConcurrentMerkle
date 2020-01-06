@@ -5,6 +5,26 @@
 #include "MerkleTree.h"
 
 template<typename T>
+MerkleTree<T>::MerkleTree() {
+    root.store(MerkleNode());
+}
+
+template<typename T>
+MerkleTree<T>::MerkleNode::MerkleNode(size_t _hash, T &v) : val(v) {
+    hash = _hash;
+    left.store(nullptr);
+    right.store(nullptr);
+}
+
+template<typename T>
+MerkleTree<T>::MerkleNode::MerkleNode() {
+    hash = 0;
+    val = NULL;
+    left.store(nullptr);
+    right.store(nullptr);
+}
+
+template<typename T>
 void MerkleTree<T>::insert(T &v) {
     size_t hash = hash_data(v);
     this->update(hash, v);
@@ -18,9 +38,9 @@ void MerkleTree<T>::remove(T v) {
 
 template<typename T>
 void MerkleTree<T>::update(std::size_t hash, T &val) {
-    MerkleNode walker = this->root.load();
-    MerkleNode next;
-    std::vector<MerkleNode> visited;
+    MerkleNode* walker = this->root.load();
+    MerkleNode* next;
+    std::vector<MerkleNode*> visited;
     short dir;
 
     while(true) {
@@ -28,56 +48,56 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
         // mark the current node as a parent node in need of updating
         visited.push_back(walker);
         if(hash % 2 == 0) {
-            next = walker.left.load();
+            next = walker->left.load();
             dir = LEFT;
         }
         else {
-            next = walker.right.load();
+            next = walker->right.load();
             dir = RIGHT;
         }
         hash >>= 1;
 
         if(next == nullptr) {
             // CASE HashNode (nonleaf)
-            if(walker.val == NULL) {
-                MerkleNode newNode = new MerkleNode(hash, val);
+            if(walker->val == NULL) {
+                MerkleNode* newNode = new MerkleNode(hash, val);
 
                 switch (dir) {
                     case LEFT :
-                        if(!walker.left.compare_exchange_weak(nullptr, newNode))
-                            next = walker.left.load();
+                        if(!walker->left.compare_exchange_weak(nullptr, newNode))
+                            next = walker->left.load();
                         break;
                     case RIGHT :
-                        if(!walker.right.compare_exchange_weak(nullptr, newNode))
-                            next = walker.right.load();
+                        if(!walker->right.compare_exchange_weak(nullptr, newNode))
+                            next = walker->right.load();
                         break;
                 }
             }
             // CASE DataNode (leaf)
             else {
-                MerkleNode newNode = new MerkleNode();
+                MerkleNode* newNode = new MerkleNode();
 
-                switch (walker.hash % 2) {
+                switch (walker->hash % 2) {
                     case LEFT :
-                        newNode.left.store(walker);
+                        newNode->left.store(walker);
                         break;
                     case RIGHT :
-                        newNode.right.store(walker);
+                        newNode->right.store(walker);
                         break;
                 }
 
                 switch (dir) {
                     case LEFT :
-                        if(walker.left.compare_exchange_weak(next, newNode))
-                            next.hash >>= 1;
+                        if(walker->left.compare_exchange_weak(next, newNode))
+                            next->hash >>= 1;
                         else
-                            next = walker.left.load();
+                            next = walker->left.load();
                         break;
                     case RIGHT :
-                        if(walker.right.compare_exchange_weak(next, newNode))
-                            next.hash >>= 1;
+                        if(walker->right.compare_exchange_weak(next, newNode))
+                            next->hash >>= 1;
                         else
-                            next = walker.right.load();
+                            next = walker->right.load();
                         break;
                 }
             }
@@ -89,25 +109,25 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
     while(!visited.empty()) {
 
         walker = visited.pop_back();
-        MerkleNode left, right;
+        MerkleNode* left, right;
         std::size_t temp;
         std::size_t newVal;
 
         do {
-            temp = walker.hash.load();
+            temp = walker->hash.load();
             newVal = 0;
-            left = walker.left.load();
-            right = walker.right.load();
+            left = walker->left.load();
+            right = walker->right.load();
 
             // obtain the hashes from the child nodes
             if(left != nullptr)
-                newVal += left.hash.load();
+                newVal += left->hash.load();
             else if(right != nullptr)
                 newVal += right.hash.load();
 
             // compute the new hashes
             newVal = hash_hashes(newVal);
-        } while(walker.hash.compare_exchange_weak(temp, newVal));
+        } while(walker->hash.compare_exchange_weak(temp, newVal));
     }
 }
 
@@ -124,18 +144,18 @@ bool MerkleTree<T>::contains(T val) {
 template<typename T>
 bool MerkleTree<T>::contains(std::size_t hash) {
     bool result = false;
-    MerkleNode walker = this->root.load();
+    MerkleNode* walker = this->root.load();
     for(int i = 0; i < MAXBITS; i++) {
 
-        if(walker.val != NULL && walker.hash == hash) {
+        if(walker->val != NULL && walker->hash == hash) {
             result = true;
             break;
         }
 
         if(hash % 2 == 0)
-            walker = walker.left.load();
+            walker = walker->left.load();
         else
-            walker = walker.right.load();
+            walker = walker->right.load();
         hash >>= 1;
     }
     return result;

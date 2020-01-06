@@ -4,5 +4,6 @@
 CMakeFiles/ConcurrentMerkle.dir/MerkleTree.cpp.o: ../MerkleTree.cpp
 CMakeFiles/ConcurrentMerkle.dir/MerkleTree.cpp.o: ../MerkleTree.h
 
+CMakeFiles/ConcurrentMerkle.dir/main.cpp.o: ../MerkleTree.h
 CMakeFiles/ConcurrentMerkle.dir/main.cpp.o: ../main.cpp
 

@@ -1,7 +1,7 @@
 #include <iostream>
-
+#include "MerkleTree.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
+    MerkleTree<int> tree = MerkleTree<int>();
+    std::cout << "hello World" << std::endl;
 }

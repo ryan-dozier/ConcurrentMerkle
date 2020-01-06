@@ -32,7 +32,7 @@ public:
     static std::hash<T> hash_data;
     class MerkleNode;
     MerkleTree();
-    ~MerkleTree();
+    ~MerkleTree(){};
     void insert(T &v);
     void remove(T v);
     bool validate();
@@ -42,19 +42,20 @@ public:
 
 private:
     void update(size_t hash, T &val);
-    std::atomic<MerkleNode*> root;
+    std::atomic<MerkleNode *> root;
 };
 
 template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
     T val;
-    MerkleNode(size_t remHash, T _val){ val = _val; hash = remHash; }
-    MerkleNode(){ hash = 0; val = NULL; }
-    ~MerkleNode() = default;
+    MerkleNode(size_t remHash, T &v);
+    MerkleNode();
+    ~MerkleNode(){};
     std::atomic<std::size_t> hash;
-    std::atomic<MerkleNode *> left { nullptr };
-    std::atomic<MerkleNode *> right { nullptr };
+    std::atomic<MerkleNode*> left;
+    std::atomic<MerkleNode*> right;
+private:
 };
 
 #endif //MERKLETREE_H

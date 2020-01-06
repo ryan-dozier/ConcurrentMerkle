@@ -6,7 +6,17 @@
 
 #IncludeRegexTransform: 
 
-/Users/admin/area67/ConcurrentMerkle/main.cpp
+/Users/admin/area67/ConcurrentMerkle/MerkleTree.cpp
+MerkleTree.h
+/Users/admin/area67/ConcurrentMerkle/MerkleTree.h
+
+/Users/admin/area67/ConcurrentMerkle/MerkleTree.h
+atomic
+-
+math.h
+-
+string
+-
 iostream
 -
 
