@@ -19,42 +19,95 @@ void MerkleTree<T>::remove(T v) {
 template<typename T>
 void MerkleTree<T>::update(std::size_t hash, T &val) {
     MerkleNode walker = this->root.load();
+    MerkleNode next;
     std::vector<MerkleNode> visited;
+    short dir;
 
     while(true) {
         if(hash == 0) break;
-
+        // mark the current node as a parent node in need of updating
         visited.push_back(walker);
-        if(hash % 2 == 0)
-            walker = walker.left.load();
-        else
-            walker = walker.right.load();
+        if(hash % 2 == 0) {
+            next = walker.left.load();
+            dir = LEFT;
+        }
+        else {
+            next = walker.right.load();
+            dir = RIGHT;
+        }
         hash >>= 1;
 
-        if(walker == nullptr) {
+        if(next == nullptr) {
+            // CASE HashNode (nonleaf)
+            if(walker.val == NULL) {
+                MerkleNode newNode = new MerkleNode(hash, val);
 
-            // TODO: This is where I need to potentially use a descriptor object to add a new Node into the structure
-            //      Create descriptor
-            //      add node to structure
+                switch (dir) {
+                    case LEFT :
+                        if(!walker.left.compare_exchange_weak(nullptr, newNode))
+                            next = walker.left.load();
+                        break;
+                    case RIGHT :
+                        if(!walker.right.compare_exchange_weak(nullptr, newNode))
+                            next = walker.right.load();
+                        break;
+                }
+            }
+            // CASE DataNode (leaf)
+            else {
+                MerkleNode newNode = new MerkleNode();
+
+                switch (walker.hash % 2) {
+                    case LEFT :
+                        newNode.left.store(walker);
+                        break;
+                    case RIGHT :
+                        newNode.right.store(walker);
+                        break;
+                }
+
+                switch (dir) {
+                    case LEFT :
+                        if(walker.left.compare_exchange_weak(next, newNode))
+                            next.hash >>= 1;
+                        else
+                            next = walker.left.load();
+                        break;
+                    case RIGHT :
+                        if(walker.right.compare_exchange_weak(next, newNode))
+                            next.hash >>= 1;
+                        else
+                            next = walker.right.load();
+                        break;
+                }
+            }
         }
+        walker = next;
     }
 
+    // This section performs the hashing operations on the visited nodes simulating a recursive call stack.
     while(!visited.empty()) {
+
         walker = visited.pop_back();
         MerkleNode left, right;
         std::size_t temp;
-        std::size_t next;
+        std::size_t newVal;
+
         do {
-            next = 0;
+            temp = walker.hash.load();
+            newVal = 0;
             left = walker.left.load();
             right = walker.right.load();
-            temp = walker.hash.load();
+
+            // obtain the hashes from the child nodes
             if(left != nullptr)
-                next += left.hash.load();
+                newVal += left.hash.load();
             else if(right != nullptr)
-                next += right.hash.load();
-            next = hash_hashes(next);
-        } while(walker.hash.compare_exchange_weak());
+                newVal += right.hash.load();
+
+            // compute the new hashes
+            newVal = hash_hashes(newVal);
+        } while(walker.hash.compare_exchange_weak(temp, newVal));
     }
 }
 

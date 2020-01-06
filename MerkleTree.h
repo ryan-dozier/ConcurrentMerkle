@@ -49,6 +49,9 @@ template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
     T val;
+    MerkleNode(size_t remHash, T _val){ val = _val; hash = remHash; }
+    MerkleNode(){ hash = 0; val = NULL; }
+    ~MerkleNode() = default;
     std::atomic<std::size_t> hash;
     std::atomic<MerkleNode *> left { nullptr };
     std::atomic<MerkleNode *> right { nullptr };
