@@ -3,4 +3,4 @@ project(ConcurrentMerkle)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(ConcurrentMerkle main.cpp MerkleTree.cpp MerkleTree.h)
+add_executable(ConcurrentMerkle main.cpp MerkleTree.h)
