@@ -109,12 +109,13 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
     MerkleNode* walker = this->root.load();
     MerkleNode* next;
     std::vector<MerkleTree<T>::MerkleNode*> visited;
+    std::size_t key = hash;
     short dir;
     bool finished = false;
 
     while(!finished) {
         // mark the current node as a parent node in need of updating
-        if(hash % 2 == 0) {
+        if(key % 2 == 0) {
             next = walker->left.load();
             dir = LEFT;
         }
@@ -122,12 +123,14 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
             next = walker->right.load();
             dir = RIGHT;
         }
-        hash >>= 1;
+
 
         if(next == MerkleTree<T>::nullNode) {
             // CASE HashNode (nonleaf)
             if(walker->val == NULL) {
-                MerkleNode* newNode = new MerkleNode(hash_data(val), hash, val);
+                key >>= 1;
+
+                MerkleNode* newNode = new MerkleNode(hash, key, val);
 
                 switch (dir) {
                     case LEFT :
@@ -177,6 +180,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                 }
             }
         } else {
+            key >>= 1;
             visited.push_back(walker);
         }
         walker = next;
@@ -213,19 +217,21 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
 template<typename T>
 bool MerkleTree<T>::contains(std::size_t hash) {
     bool result = false;
+    size_t key = hash;
     MerkleNode* walker = this->root.load();
-    for (int i = 0; i < MAXBITS; i++) {
+    for (int i = 0; i < MAXBITS && walker != MerkleTree<T>::nullNode; i++) {
 
-        if (walker->val != NULL && walker->hash.load() == hash) {
-            result = true;
+        if (walker->val != NULL) {
+            if (walker->hash.load() == hash)
+                result = true;
             break;
         }
 
-        if (hash % 2 == 0)
+        if (key % 2 == 0)
             walker = walker->left.load();
         else
             walker = walker->right.load();
-        hash >>= 1;
+        key >>= 1;
     }
     return result;
 }
