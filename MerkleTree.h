@@ -13,7 +13,7 @@
 #define MAXBITS 64
 #else
 #define ENVIRONMENT32
-        #define MAXBITS 32
+#define MAXBITS 32
 #endif
 #endif
 
@@ -115,15 +115,16 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
 
     while(!finished) {
         // mark the current node as a parent node in need of updating
-        if(key % 2 == 0) {
-            next = walker->left.load();
-            dir = LEFT;
+        switch(key % 2) {
+            case LEFT :
+                next = walker->left.load();
+                dir = LEFT;
+                break;
+            case RIGHT :
+                next = walker->right.load();
+                dir = RIGHT;
+                break;
         }
-        else {
-            next = walker->right.load();
-            dir = RIGHT;
-        }
-
 
         if(next == MerkleTree<T>::nullNode) {
             // CASE HashNode (nonleaf)
@@ -203,6 +204,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
             right = walker->right.load();
 
             // obtain the hashes from the child nodes
+            //TODO: these need to be changed to strings
             if(left != nullNode)
                 newVal += left->hash.load();
             else if(right != nullNode)
