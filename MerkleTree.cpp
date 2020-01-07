@@ -5,27 +5,6 @@
 #include "MerkleTree.h"
 
 template<typename T>
-MerkleTree<T>::MerkleTree() {
-    this->root.store(new MerkleNode());
-}
-
-template<typename T>
-MerkleTree<T>::MerkleNode::MerkleNode(size_t _hash, T &v) : val(v) {
-    this->hash.store(_hash);
-    this->left.store(nullptr);
-    this->right.store(nullptr);
-}
-
-template<typename T>
-MerkleTree<T>::MerkleNode::MerkleNode() {
-    this->hash.store(0);
-    this->val = NULL;
-    this->left.store(nullptr);
-    this->right.store(nullptr);
-}
-
-
-template<typename T>
 void MerkleTree<T>::insert(T &v) {
     size_t hash = hash_data(v);
     this->update(hash, v);
@@ -43,9 +22,9 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
     MerkleNode * next;
     std::vector<MerkleNode *> visited;
     short dir;
+    bool finished = false;
 
-    while(true) {
-        if(hash == 0) break;
+    while(!finished) {
         // mark the current node as a parent node in need of updating
         visited.push_back(walker);
         if(hash % 2 == 0) {
@@ -65,11 +44,15 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
 
                 switch (dir) {
                     case LEFT :
-                        if(!walker->left.compare_exchange_weak(nullptr, newNode))
+                        if(walker->left.compare_exchange_weak(nullptr, newNode))
+                            finished = true;
+                        else
                             next = walker->left.load();
                         break;
                     case RIGHT :
-                        if(!walker->right.compare_exchange_weak(nullptr, newNode))
+                        if(walker->right.compare_exchange_weak(nullptr, newNode))
+                            finished = true;
+                        else
                             next = walker->right.load();
                         break;
                 }
@@ -91,14 +74,12 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                     case LEFT :
                         if(walker->left.compare_exchange_weak(next, newNode))
                             next->hash >>= 1;
-                        else
-                            next = walker->left.load();
+                        next = walker->left.load();
                         break;
                     case RIGHT :
                         if(walker->right.compare_exchange_weak(next, newNode))
                             next->hash >>= 1;
-                        else
-                            next = walker->right.load();
+                        next = walker->right.load();
                         break;
                 }
             }

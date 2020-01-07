@@ -2,6 +2,6 @@
 #include "MerkleTree.h"
 
 int main() {
-    MerkleTree<int> tree = MerkleTree<int>();
+    MerkleTree<std::string>* tree = new MerkleTree<std::string>();
     std::cout << "hello World" << std::endl;
 }

@@ -8,17 +8,19 @@
 
 // Check GCC
 #if __GNUC__
-#if __x86_64__ || __ppc64__
-#define ENVIRONMENT64
-#define MAXBITS 64
-#else
-#define ENVIRONMENT32
-#define MAXBITS 32
-#endif
+    #if __x86_64__ || __ppc64__
+        #define ENVIRONMENT64
+        #define MAXBITS 64
+    #else
+        #define ENVIRONMENT32
+        #define MAXBITS 32
+    #endif
 #endif
 
+
+
 #include <atomic>
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <iostream>
 
@@ -31,14 +33,15 @@ public:
     static std::hash<T> hash_hashes;
     static std::hash<T> hash_data;
     class MerkleNode;
+
     MerkleTree();
-    ~MerkleTree(){};
+    ~MerkleTree(){ delete root.load(); };
     void insert(T &v);
     void remove(T v);
     bool validate();
     bool contains(T val);
     bool contains(std::size_t hash);
-    char* getRootValue(){ return root.load(); };
+    size_t getRootValue(){ return root.load(); };
 
 private:
     void update(size_t hash, T &val);
@@ -51,12 +54,34 @@ public:
     T val;
     std::atomic<std::size_t> hash;
 
-    MerkleNode(size_t remHash, T &v);
+    MerkleNode(size_t _hash, T &v);
     MerkleNode();
     ~MerkleNode(){};
     std::atomic<MerkleNode *> left;
     std::atomic<MerkleNode *> right;
 private:
 };
+
+
+template<typename T>
+MerkleTree<T>::MerkleTree() {
+    this->root.store(new MerkleNode());
+}
+
+template<typename T>
+MerkleTree<T>::MerkleNode::MerkleNode(size_t _hash, T &v) {
+    this->val = v;
+    this->hash.store(_hash);
+    this->left.store(nullptr);
+    this->right.store(nullptr);
+}
+
+template<typename T>
+MerkleTree<T>::MerkleNode::MerkleNode() {
+    this->hash.store(0);
+    this->val = NULL;
+    this->left.store(nullptr);
+    this->right.store(nullptr);
+}
 
 #endif //MERKLETREE_H
