@@ -11,7 +11,7 @@
 
 int main(int argc, const char * argv[]) {
     // insert code here...
-    MerkleTree<int*>* tree = new MerkleTree<int*>();
+    auto* tree = new MerkleTree<int*>();
     int value = 5;
     int* test = &value;
     tree->insert(test);
@@ -66,5 +66,7 @@ int main(int argc, const char * argv[]) {
     std::cout << is8here << std::endl;
     std::cout << is9here << std::endl;
     std::cout << is9here2 << std::endl;
+
+    delete tree;
     return 0;
 }

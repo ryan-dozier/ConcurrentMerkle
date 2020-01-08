@@ -43,9 +43,9 @@ public:
         nullNode->right.store(nullptr);
         this->root.store(new MerkleNode());
     };
-    // TODO: This needs a full traversal to delate all nodes, will work on this later
+    // TODO: This needs a full traversal to delete all nodes, will work on this later
     ~MerkleTree() {
-        delete root.load();
+        this->post_delete(root.load());
         delete nullNode;
     };
 
@@ -85,6 +85,15 @@ private:
     std::atomic<MerkleNode*> root;
     // The update function performs both inserts and removes depending on the parameters.
     void update(size_t hash, T &val);
+
+    // helper deconstructor function.
+    void post_delete(MerkleNode* node) {
+        if (node != nullNode) {
+            post_delete(node->left.load());
+            post_delete(node->right.load());
+            delete node;
+        }
+    }
 };
 
 template<typename T>
@@ -174,9 +183,10 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                     finished = true;
 
                 }
-                // 2) the leaf has a different hash, we will need to add an intermediary node as the pending operation, and the current
-                //    leaf have a common key bit to this point. To do this we will create a new node, determine which direction the current
-                //    leaf node will branch from the intermediary, then compare and swap the new node to the previous node.
+                // 2) the leaf has a different hash, we will need to add an intermediary node as the pending operation,
+                //    and the current leaf have a common key bit to this point. To do this we will create a new node,
+                //    determine which direction the current leaf node will branch from the intermediary, then compare
+                //    and swap the new node to the previous node.
                 else {
                     MerkleNode* newNode = new MerkleNode();
 
