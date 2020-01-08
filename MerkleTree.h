@@ -17,15 +17,9 @@
 #endif
 #endif
 
-#include <atomic>
-#include <cmath>
-#include <cstdlib>
-#include <cstddef>
 #include <iostream>
-#include <array>
+#include <atomic>
 #include <vector>
-#include <functional>
-
 
 #define LEFT 0
 #define RIGHT 1
@@ -65,7 +59,12 @@ public:
         this->update(hash, temp);
     };
 
-    //TODO: This function will require a lot of thought as it will likely have to be blocking. I want to have insert/remove/contains flushed out first. My current idea is to have validate block access to the tree during the operation, but to allow other threads to add pending operations to a queue. The contains operation will be able to look at the pending operations and the tree to determine if the item is present. There is also a possiblility of method crossing if a remove and insert are called during the validate operation.
+    // TODO: This function will require a lot of thought as it will likely have to be blocking. I want to have
+    //          insert/remove/contains flushed out first. My current idea is to have validate block access to the tree
+    //          during the operation, but to allow other threads to add pending operations to a queue. The contains
+    //          operation will be able to look at the pending operations and the tree to determine if the item is
+    //          present. There is also a possiblility of method crossing if a remove and insert are called during the
+    //          validate operation.
     bool validate(){};
 
     // checks if a value is in the tree.
@@ -172,9 +171,9 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                     finished = true;
 
                 }
-                    //      2) the leaf has a different hash, we will need to add an intermediary node as the pending operation, and the current
-                    //          leaf have a common key bit to this point. To do this we will create a new node, determine which direction the current
-                    //          leaf node will branch from the intermediary, then compare and swap the new node to the previous node.
+                //      2) the leaf has a different hash, we will need to add an intermediary node as the pending operation, and the current
+                //          leaf have a common key bit to this point. To do this we will create a new node, determine which direction the current
+                //          leaf node will branch from the intermediary, then compare and swap the new node to the previous node.
                 else {
                     MerkleNode* newNode = new MerkleNode();
 
@@ -188,7 +187,10 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                             break;
                     }
 
-                    // TODO: I believe this can be done without walker and next. I think we can look ahead at walker->left and ->right to determine if at the bottom of the tree instead of using next, then we can easily keep track of the previous and which direction which would save some operations. This is an optimization and may be worth doing in a future iteration.
+                    // TODO: I believe this can be done without walker and next. I think we can look ahead at
+                    //          walker->left and ->right to determine if at the bottom of the tree instead of using next,
+                    //          then we can easily keep track of the previous and which direction which would save some
+                    //          operations. This is an optimization and may be worth doing in a future iteration.
                     // This is the last visited node
                     MerkleNode* prev = visited.back();
                     // check which direction walker lies on previous, this if/else block is symmetric for left/right
@@ -221,7 +223,9 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
             // in the case that we are at a non-null node we simply remove a bit from the key and contintue the traversal
             key >>= 1;
         }
-        // TODO: I think the code would be cleaner by utilizing multiple types of nodes, leaf and nonleaf. I'll have to look at how to do this in c++, in java it would be by utilizing instanceof. But for c++ I'm not entirely sure how to do this.
+        // TODO: I think the code would be cleaner by utilizing multiple types of nodes, leaf and nonleaf. I'll have to
+        //          look at how to do this in c++, in java it would be by utilizing instanceof. But for c++ I'm not
+        //          entirely sure how to do this.
 
         // We only want to update hashes of non-leaf nodes, this vector is used to keep track of which nodes will be affected by
         // update operation.

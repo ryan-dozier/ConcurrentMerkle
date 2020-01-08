@@ -1,0 +1,3 @@
+/Users/admin/area67/ConcurrentMerkle/_build/CMakeFiles/ConcurrentMerkle.dir
+/Users/admin/area67/ConcurrentMerkle/_build/CMakeFiles/ALL_BUILD.dir
+/Users/admin/area67/ConcurrentMerkle/_build/CMakeFiles/ZERO_CHECK.dir
