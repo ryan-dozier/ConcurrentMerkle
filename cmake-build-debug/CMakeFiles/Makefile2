@@ -74,12 +74,12 @@ preinstall:
 CMakeFiles/ConcurrentMerkle.dir/all:
 	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/depend
 	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles --progress-num=1,2,3 "Built target ConcurrentMerkle"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles --progress-num=1,2 "Built target ConcurrentMerkle"
 .PHONY : CMakeFiles/ConcurrentMerkle.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/ConcurrentMerkle.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 3
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 2
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/ConcurrentMerkle.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 0
 .PHONY : CMakeFiles/ConcurrentMerkle.dir/rule

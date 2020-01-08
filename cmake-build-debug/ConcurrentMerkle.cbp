@@ -80,9 +80,6 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/Users/admin/area67/ConcurrentMerkle/MerkleTree.cpp">
-			<Option target="ConcurrentMerkle"/>
-		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/MerkleTree.h">
 			<Option target="ConcurrentMerkle"/>
 		</Unit>

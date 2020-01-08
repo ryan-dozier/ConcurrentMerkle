@@ -1,5 +1,4 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/ConcurrentMerkle.dir/MerkleTree.cpp.o"
   "CMakeFiles/ConcurrentMerkle.dir/main.cpp.o"
   "ConcurrentMerkle"
   "ConcurrentMerkle.pdb"

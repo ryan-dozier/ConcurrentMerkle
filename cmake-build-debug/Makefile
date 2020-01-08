@@ -123,33 +123,6 @@ ConcurrentMerkle/fast:
 	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/build
 .PHONY : ConcurrentMerkle/fast
 
-MerkleTree.o: MerkleTree.cpp.o
-
-.PHONY : MerkleTree.o
-
-# target to build an object file
-MerkleTree.cpp.o:
-	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/MerkleTree.cpp.o
-.PHONY : MerkleTree.cpp.o
-
-MerkleTree.i: MerkleTree.cpp.i
-
-.PHONY : MerkleTree.i
-
-# target to preprocess a source file
-MerkleTree.cpp.i:
-	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/MerkleTree.cpp.i
-.PHONY : MerkleTree.cpp.i
-
-MerkleTree.s: MerkleTree.cpp.s
-
-.PHONY : MerkleTree.s
-
-# target to generate assembly for a file
-MerkleTree.cpp.s:
-	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/MerkleTree.cpp.s
-.PHONY : MerkleTree.cpp.s
-
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -186,9 +159,6 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... ConcurrentMerkle"
-	@echo "... MerkleTree.o"
-	@echo "... MerkleTree.i"
-	@echo "... MerkleTree.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

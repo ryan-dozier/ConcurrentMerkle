@@ -6,23 +6,3 @@
 
 #IncludeRegexTransform: 
 
-/Users/admin/area67/ConcurrentMerkle/MerkleTree.cpp
-MerkleTree.h
-/Users/admin/area67/ConcurrentMerkle/MerkleTree.h
-
-/Users/admin/area67/ConcurrentMerkle/MerkleTree.h
-atomic
--
-cmath
--
-string
--
-iostream
--
-
-/Users/admin/area67/ConcurrentMerkle/main.cpp
-iostream
--
-MerkleTree.h
-/Users/admin/area67/ConcurrentMerkle/MerkleTree.h
-
