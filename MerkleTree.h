@@ -330,18 +330,21 @@ bool MerkleTree<T>::validate() {
             stk.push(curr->right.load());
     }
 
-    MerkleNode* walker;
+    MerkleNode *walker, *left, *right;
     size_t computed_hash;
     std::string concatHash;
     
+    //TODO: This could probably be optimized some.
     while (!order.empty()) {
         concatHash = "";
         walker = order.top();
+        left = walker->left.load();
+        right = walker->right.load();
         
-        if(walker->left.load() != nullNode)
-            concatHash += std::to_string(walker->left.load()->hash.load());
-        if(walker->right.load() != nullNode)
-            concatHash += std::to_string(walker->right.load()->hash.load());
+        if(left != nullNode)
+            concatHash += std::to_string(left->hash.load());
+        if(right != nullNode)
+            concatHash += std::to_string(right->hash.load());
         
         computed_hash = hash_hashes(concatHash);
         
