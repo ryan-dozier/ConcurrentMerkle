@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <atomic>
-#include <vector>
+#include <stack>
 
 #define LEFT 0
 #define RIGHT 1
@@ -44,7 +44,10 @@ public:
         this->root.store(new MerkleNode());
     };
     // TODO: This needs a full traversal to delate all nodes, will work on this later
-    ~MerkleTree(){ delete root.load(); delete nullNode; };
+    ~MerkleTree() {
+        delete root.load();
+        delete nullNode;
+    };
 
     // Inserts a value into the tree
     void insert(T &v) {
@@ -65,7 +68,7 @@ public:
     //          operation will be able to look at the pending operations and the tree to determine if the item is
     //          present. There is also a possiblility of method crossing if a remove and insert are called during the
     //          validate operation.
-    bool validate(){};
+    bool validate();
 
     // checks if a value is in the tree.
     bool contains(T val) {
@@ -76,7 +79,7 @@ public:
     bool contains(std::size_t hash);
 
     // returns the root hash value
-    size_t getRootValue(){ return root.load(); };
+    size_t getRootValue() { return root.load()->hash.load(); };
 
 private:
     std::atomic<MerkleNode*> root;
@@ -110,7 +113,7 @@ public:
         this->right.store(MerkleTree::nullNode);
     };
 
-    ~MerkleNode(){};
+    ~MerkleNode() {};
 
 private:
 };
@@ -120,7 +123,7 @@ template<typename T>
 void MerkleTree<T>::update(std::size_t hash, T &val) {
     MerkleNode* walker = this->root.load();
     MerkleNode* next = nullNode;
-    std::vector<MerkleTree<T>::MerkleNode*> visited;
+    std::stack<MerkleTree<T>::MerkleNode*> visited;
     std::size_t key = hash;
     short dir = 0;
     bool finished = false;
@@ -164,16 +167,16 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                 // CASE DataNode (leaf)
             else {
                 // There are two cases for leaf nodes
-                //      1) the leaf node has the same hash as the current operation. In this case we update the value of the leaf.
+                // 1) the leaf node has the same hash as the current operation. In this case we update the value of the leaf.
                 if(hash == walker->hash.load()) {
                     // this is where the update should be performed.
                     walker->val.store(val);
                     finished = true;
 
                 }
-                //      2) the leaf has a different hash, we will need to add an intermediary node as the pending operation, and the current
-                //          leaf have a common key bit to this point. To do this we will create a new node, determine which direction the current
-                //          leaf node will branch from the intermediary, then compare and swap the new node to the previous node.
+                // 2) the leaf has a different hash, we will need to add an intermediary node as the pending operation, and the current
+                //    leaf have a common key bit to this point. To do this we will create a new node, determine which direction the current
+                //    leaf node will branch from the intermediary, then compare and swap the new node to the previous node.
                 else {
                     MerkleNode* newNode = new MerkleNode();
 
@@ -192,7 +195,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                     //          then we can easily keep track of the previous and which direction which would save some
                     //          operations. This is an optimization and may be worth doing in a future iteration.
                     // This is the last visited node
-                    MerkleNode* prev = visited.back();
+                    MerkleNode* prev = visited.top();
                     // check which direction walker lies on previous, this if/else block is symmetric for left/right
                     if(walker == prev->left.load()) {
                         // Attempt to CAS the new intermediary node.
@@ -230,9 +233,9 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
         // We only want to update hashes of non-leaf nodes, this vector is used to keep track of which nodes will be affected by
         // update operation.
         if(walker->val.load() == NULL)
-            visited.push_back(walker);
+            visited.push(walker);
 
-        // conttinue the traversal
+        // continue the traversal
         walker = next;
     }
 
@@ -240,8 +243,8 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
     while(!visited.empty()) {
 
         // Grab the top node from the stack
-        walker = visited.back();
-        visited.pop_back();
+        walker = visited.top();
+        visited.pop();
         MerkleNode* left;
         MerkleNode* right;
         std::size_t temp;
@@ -295,6 +298,57 @@ bool MerkleTree<T>::contains(std::size_t hash) {
         }
         // decrement the key and continue.
         key >>= 1;
+    }
+    return result;
+}
+
+template<typename T>
+bool MerkleTree<T>::validate() {
+    bool result = true;
+
+    // create an empty stack and push root node
+    std::stack<MerkleNode*> stk;
+    stk.push(this->root.load());
+
+    // create another stack to store post-order traversal
+    std::stack<MerkleNode*> order;
+
+    // run till stack is not empty
+    while (!stk.empty()) {
+        // we pop a node from the stack and push the data to output stack
+        MerkleNode* curr = stk.top();
+        stk.pop();
+
+        if(curr->val.load() == NULL)
+            order.push(curr);
+
+        // push left and right child of popped node to the stack
+        if (curr->left.load() != nullNode)
+            stk.push(curr->left.load());
+
+        if (curr->right.load() != nullNode)
+            stk.push(curr->right.load());
+    }
+
+    MerkleNode* walker;
+    size_t computed_hash;
+    std::string concatHash;
+    
+    while (!order.empty()) {
+        concatHash = "";
+        walker = order.top();
+        
+        if(walker->left.load() != nullNode)
+            concatHash += std::to_string(walker->left.load()->hash.load());
+        if(walker->right.load() != nullNode)
+            concatHash += std::to_string(walker->right.load()->hash.load());
+        
+        computed_hash = hash_hashes(concatHash);
+        
+        if(computed_hash != walker->hash.load())
+            result = false;
+        
+        order.pop();
     }
     return result;
 }

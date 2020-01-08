@@ -30,6 +30,25 @@ int main(int argc, const char * argv[]) {
     int* test5 = &value5;
     tree->insert(test5);
 
+    std::cout << tree->getRootValue() << std::endl;
+
+
+    // Manually check hashes
+    size_t hash1, hash2;
+    hash1 = MerkleTree<int*>::hash_data(test5);
+    hash2 = MerkleTree<int*>::hash_data(test4);
+    
+    hash2 = MerkleTree<int*>::hash_hashes(std::to_string(hash1) + std::to_string(hash2));
+    hash1 = MerkleTree<int*>::hash_data(test2);
+    
+    hash1 = MerkleTree<int*>::hash_hashes(std::to_string(hash1) + std::to_string(hash2));
+    hash2 = MerkleTree<int*>::hash_data(test);
+    
+    hash1 = MerkleTree<int*>::hash_hashes(std::to_string(hash1) + std::to_string(hash2));
+
+    std::cout << hash1 << std::endl;
+    
+    std::cout << tree->validate() << std::endl << std::endl;
 
     bool is5here = tree->contains(test);
     bool is6here = tree->contains(test2);
@@ -47,6 +66,5 @@ int main(int argc, const char * argv[]) {
     std::cout << is8here << std::endl;
     std::cout << is9here << std::endl;
     std::cout << is9here2 << std::endl;
-
     return 0;
 }
