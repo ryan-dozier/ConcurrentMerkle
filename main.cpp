@@ -7,66 +7,39 @@
 //
 
 #include <iostream>
+#include <thread>
+#include <vector>
 #include "MerkleTree.h"
+
+
+void work(int thread_id, int num_ops, MerkleTree<int*> *tree)
+{
+    int base = thread_id * num_ops;
+    for (int i = 0; i < num_ops; i++)
+    {
+        int* nextItem = new int(base + i);
+        tree->insert(nextItem);
+    }
+}
 
 int main(int argc, const char * argv[]) {
     // insert code here...
     auto* tree = new MerkleTree<int*>();
-    int value = 5;
-    int* test = &value;
-    tree->insert(test);
-    int value2 = 6;
-    int* test2 = &value2;
-    tree->insert(test2);
+    std::vector<std::thread> threads;
 
-    int value3 = 7;
-    int* test3 = &value3;
-
-    int value4 = 8;
-    int* test4 = &value4;
-    tree->insert(test4);
-
-    int value5 = 9;
-    int* test5 = &value5;
-    tree->insert(test5);
-
-    std::cout << tree->getRootValue() << std::endl;
-
-
-    // Manually check hashes
-    size_t hash1, hash2;
-    hash1 = MerkleTree<int*>::hash_data(test5);
-    hash2 = MerkleTree<int*>::hash_data(test4);
+    int NUM_THREADS = 4;
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        threads.push_back(std::thread(work, i, 100, tree));
+    }
     
-    hash2 = MerkleTree<int*>::hash_hashes(std::to_string(hash1) + std::to_string(hash2));
-    hash1 = MerkleTree<int*>::hash_data(test2);
+    for (std::thread &t : threads)
+        t.join();
     
-    hash1 = MerkleTree<int*>::hash_hashes(std::to_string(hash1) + std::to_string(hash2));
-    hash2 = MerkleTree<int*>::hash_data(test);
     
-    hash1 = MerkleTree<int*>::hash_hashes(std::to_string(hash1) + std::to_string(hash2));
-
-    std::cout << hash1 << std::endl;
-    
-    std::cout << tree->validate() << std::endl << std::endl;
-
-    bool is5here = tree->contains(test);
-    bool is6here = tree->contains(test2);
-    bool is7here = tree->contains(test3);
-    bool is8here = tree->contains(test4);
-    bool is9here = tree->contains(test5);
-
-    tree->remove(test5);
-    bool is9here2 = tree->contains(test5);
-
-
-    std::cout << is5here << std::endl;
-    std::cout << is6here << std::endl;
-    std::cout << is7here << std::endl;
-    std::cout << is8here << std::endl;
-    std::cout << is9here << std::endl;
-    std::cout << is9here2 << std::endl;
-
+    std::cout << tree->validate() << std::endl;
     delete tree;
     return 0;
 }
+
+

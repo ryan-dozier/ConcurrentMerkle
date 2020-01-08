@@ -29,18 +29,21 @@ class MerkleTree {
 public:
     class MerkleNode;
     //TODO: There may be a better wayt to declare this sentinal node value
-    inline static MerkleNode* nullNode;
+    inline static MerkleNode* nullNode = nullptr;
 
     //TODO: I would prefer to utilize different a different hashing function, but this will work for the moment.
     inline static std::hash<T> hash_data;
     inline static std::hash<std::string> hash_hashes;
 
     MerkleTree() {
-        nullNode = new MerkleNode();
-        nullNode->hash.store(0);
-        nullNode->val = NULL;
-        nullNode->left.store(nullptr);
-        nullNode->right.store(nullptr);
+        // nullNode is a singleton, only want to change it if it has not been initialized
+        if(nullNode == nullptr) {
+            nullNode = new MerkleNode();
+            nullNode->hash.store(0);
+            nullNode->val = NULL;
+            nullNode->left.store(nullptr);
+            nullNode->right.store(nullptr);
+        }
         this->root.store(new MerkleNode());
     };
     // TODO: This needs a full traversal to delete all nodes, will work on this later
