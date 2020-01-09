@@ -30,7 +30,7 @@ int main(int argc, const char * argv[]) {
     int NUM_THREADS = 4;
     for (int i = 0; i < NUM_THREADS; i++)
     {
-        threads.push_back(std::thread(work, i, 100, tree));
+        threads.push_back(std::thread(work, i, 1000, tree));
     }
     
     for (std::thread &t : threads)

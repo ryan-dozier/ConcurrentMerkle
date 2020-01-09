@@ -24,6 +24,8 @@
 #define LEFT 0
 #define RIGHT 1
 
+enum NodeType { HASH, DATA };
+
 template<typename T>
 class MerkleTree {
 public:
@@ -37,13 +39,6 @@ public:
 
     MerkleTree() {
         // nullNode is a singleton, only want to change it if it has not been initialized
-        if(nullNode == nullptr) {
-            nullNode = new MerkleNode();
-            nullNode->hash.store(0);
-            nullNode->val = NULL;
-            nullNode->left.store(nullptr);
-            nullNode->right.store(nullptr);
-        }
         this->root.store(new MerkleNode());
     };
     // TODO: This needs a full traversal to delete all nodes, will work on this later
@@ -103,7 +98,8 @@ template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
     std::atomic<T> val;
-    size_t key;
+    std::atomic<std::size_t> key;
+    NodeType type;
     //TODO: This likely should be changed to be a string, but c++ doesnt have atomic string support. will have to think about this.
     std::atomic<std::size_t> hash;
     std::atomic<MerkleNode*> left;
@@ -112,17 +108,19 @@ public:
     MerkleNode(size_t _hash, size_t key, T &v) {
         this->val.store(v);
         this->hash.store(_hash);
-        this->key = key;
-        this->left.store(MerkleTree::nullNode);
-        this->right.store(MerkleTree::nullNode);
+        this->key.store(key);
+        this->type = DATA;
+        this->left.store(nullNode);
+        this->right.store(nullNode);
     };
 
     MerkleNode() {
         this->hash.store(0);
         this->val.store(NULL);
-        this->key = 0;
-        this->left.store(MerkleTree::nullNode);
-        this->right.store(MerkleTree::nullNode);
+        this->key.store(0);
+        this->type = HASH;
+        this->left.store(nullNode);
+        this->right.store(nullNode);
     };
 
     ~MerkleNode() {};
@@ -134,10 +132,16 @@ private:
 template<typename T>
 void MerkleTree<T>::update(std::size_t hash, T &val) {
     MerkleNode* walker = this->root.load();
+    MerkleNode* prev = walker;
+    short prevDir = 0;
     MerkleNode* next = nullNode;
+    short nextDir = 0;
+    size_t old_key;
+    size_t new_key;
+
+
     std::stack<MerkleTree<T>::MerkleNode*> visited;
     std::size_t key = hash;
-    short dir = 0;
     bool finished = false;
 
     while(!finished) {
@@ -145,43 +149,50 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
         switch(key % 2) {
             case LEFT :
                 next = walker->left.load();
-                dir = LEFT;
+                nextDir = LEFT;
                 break;
             case RIGHT :
                 next = walker->right.load();
-                dir = RIGHT;
+                nextDir = RIGHT;
                 break;
         }
-
-        if(next == MerkleTree<T>::nullNode) {
+    
+        
+        if(next != nullNode) {
+            // in the case that we are at a non-null node we simply remove a bit from the key and contintue the traversal
+            key >>= 1;
+        } else {
             // CASE HashNode (nonleaf)
-            if(walker->val.load() == NULL) {
+            if(walker->type == HASH) {
                 // if the node is not a leaf node we decrement the key
                 key >>= 1;
-
                 MerkleNode* newNode = new MerkleNode(hash, key, val);
 
-                switch (dir) {
+                switch (nextDir) {
                     case LEFT :
-                        if(walker->left.compare_exchange_weak(MerkleTree::nullNode, newNode))
+                        if(walker->left.compare_exchange_weak(nullNode, newNode)) {
                             finished = true;
-                        else
+                        } else {
                             next = walker->left.load();
+                            delete newNode;
+                        }
                         break;
                     case RIGHT :
-                        if(walker->right.compare_exchange_weak(MerkleTree::nullNode, newNode))
+                        if(walker->right.compare_exchange_weak(nullNode, newNode)) {
                             finished = true;
-                        else
+                        } else {
                             next = walker->right.load();
+                            delete newNode;
+                        }
                         break;
                 }
             }
-                // CASE DataNode (leaf)
+            // CASE DataNode (leaf)
             else {
                 // There are two cases for leaf nodes
                 // 1) the leaf node has the same hash as the current operation. In this case we update the value of the leaf.
                 if(hash == walker->hash.load()) {
-                    // this is where the update should be performed.
+                    // this is where the update should be performed, will have to think about how interleaving will be.
                     walker->val.store(val);
                     finished = true;
 
@@ -194,7 +205,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                     MerkleNode* newNode = new MerkleNode();
 
                     // Determine which direction the current leaf lies on the new parent node
-                    switch (walker->key % 2) {
+                    switch (walker->key.load() % 2) {
                         case LEFT :
                             newNode->left.store(walker);
                             break;
@@ -208,50 +219,59 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
                     //          then we can easily keep track of the previous and which direction which would save some
                     //          operations. This is an optimization and may be worth doing in a future iteration.
                     // This is the last visited node
-                    MerkleNode* prev = visited.top();
                     // check which direction walker lies on previous, this if/else block is symmetric for left/right
-                    if(walker == prev->left.load()) {
-                        // Attempt to CAS the new intermediary node.
-                        if(prev->left.compare_exchange_weak(walker, newNode)) {
-                            // Decrement the key by a bit now that there is a new interemediary node
-                            walker->key >>= 1;
-                            // set the next node to visit
-                            next = newNode;
-                        } else {
-                            // If the CAS fails then another thread has performed an operation, because nodes are not removed from the tree,
-                            // we can assume an intermediary node has been added. The CAS was on prev->direction, therefore load prev->direction
-                            // and visit there next.
-                            next = prev->left.load();
-                        }
-                    } else if(walker == prev->right.load()) {
-                        if(prev->right.compare_exchange_weak(walker, newNode)) {
-                            walker->key >>= 1;
-                            next = newNode;
-                        } else {
-                            next = prev->right.load();
-                        }
-                    } else {
-                        std::cout << "This is bad" << std::endl;
+                    switch (prevDir) {
+                        case LEFT :
+                            // Attempt to CAS the new intermediary node.
+                            if(prev->left.compare_exchange_weak(walker, newNode)) {
+                                // Decrement the key by a bit now that there is a new interemediary node
+                                do {
+                                    old_key = walker->key.load();
+                                    new_key = old_key >> 1;
+                                } while(!walker->key.compare_exchange_weak(old_key, new_key));
+                                
+                                // set the next node to visit
+                                next = newNode;
+                            } else {
+                                // If the CAS fails then another thread has performed an operation, because nodes are not removed from the tree,
+                                // we can assume an intermediary node has been added. The CAS was on prev->direction, therefore load prev->direction
+                                // and visit there next.
+                                next = prev->left.load();
+                                delete newNode;
+                            }
+                            break;
+                        case RIGHT :
+                            if(prev->right.compare_exchange_weak(walker, newNode)) {
+                                do {
+                                    old_key = walker->key.load();
+                                    new_key = old_key >> 1;
+                                } while(!walker->key.compare_exchange_weak(old_key, new_key));
+                                next = newNode;
+                            } else {
+                                next = prev->right.load();
+                                delete newNode;
+                            }
+                            break;
                     }
                 }
             }
-        } else {
-            // in the case that we are at a non-null node we simply remove a bit from the key and contintue the traversal
-            key >>= 1;
         }
+        
         // TODO: I think the code would be cleaner by utilizing multiple types of nodes, leaf and nonleaf. I'll have to
         //          look at how to do this in c++, in java it would be by utilizing instanceof. But for c++ I'm not
         //          entirely sure how to do this.
 
         // We only want to update hashes of non-leaf nodes, this vector is used to keep track of which nodes will be affected by
         // update operation.
-        if(walker->val.load() == NULL)
+        if(walker->type == HASH)
             visited.push(walker);
 
         // continue the traversal
+        prev = walker;
+        prevDir = nextDir;
         walker = next;
     }
-
+    
     // This section performs the hashing operations on the visited nodes simulating a recursive call stack.
     while(!visited.empty()) {
 
@@ -264,6 +284,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
         std::size_t newVal;
         std::string concatHash;
         do {
+            concatHash = "";
             // grab a temporary copy of the hash, this will be used to check if the state has changed.
             temp = walker->hash.load();
 
