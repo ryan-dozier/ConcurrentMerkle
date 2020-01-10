@@ -162,6 +162,7 @@ void MerkleTree<T>::update(std::size_t hash, T &val) {
             // in the case that we are at a non-null node we simply remove a bit from the key and contintue the traversal
             key >>= 1;
         } else {
+            // TODO: This may need to be done using a descriptor instead of several atomic variables.
             // CASE HashNode (nonleaf)
             if(walker->type == HASH) {
                 // if the node is not a leaf node we decrement the key
@@ -336,6 +337,7 @@ bool MerkleTree<T>::contains(std::size_t hash) {
     return result;
 }
 
+// TODO: This will not currently work with concurrent execution. However it does work sequentially for testing at the moment.
 template<typename T>
 bool MerkleTree<T>::validate() {
     bool result = true;
