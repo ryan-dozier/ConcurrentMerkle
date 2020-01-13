@@ -15,13 +15,17 @@ Scope/Properties
 * high performance on insert/delete/contains. These will be the most common operations when using the tree.
 * the novelty of this project/paper will be that there are no concurrent merkle trees in existance other than coarse grained versions.
   * during the senior design project we stumbled upon a "fine-grained" solution that students at UC Berkely came up with. However their version is only fine grained when multiple items are batch inserted. 
-    * in the case where two threads independantly submit a single item the tree is locked from the root (coarse-grained)
+    * in the case where two threads independently submit a single item the tree is locked from the root (coarse-grained)
 
 Related Papers:
 * This is a problem area for the project as there really is no literature regarding concurrent merkle trees other than the fine grained student written paper.
   * We can however cite some ways in which we are making it concurrent. I believe I will need to use descriptor objects when modifying the leaf nodes, I was hoping to avoid this but after testing I think it may be necessary.
   * For comparisons I think it will be necessary to compare with a coarse-grained solution, and potentially an STM based aproach. Because most uses currently use coarse-grained implementations i.e. ethereum/bitcoin/intel/google it would show the performance difference to the "standard"
 * I did find some recent papers on uses for merkle hashes. the related work may end up being a combination of uses/why merkle trees matter, and then cite different concurrency techniques used in the creation (descriptors ect.)
+  * concurrent query authentication (Sep 2019)
+    * IEEE Transactions on Knowledge and Data Engineering
+  * remote data authentication (Dec 2019)
+    * Communications in Computer and Information Science (CCIS, volume 1137)
 
 
 Specific Use Cases:
