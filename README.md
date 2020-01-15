@@ -2,10 +2,8 @@ Implementation of a Concurrent Merkle Tree
 
 Todo List:
 * Test insert/delete when using multiple threads
+    * insert may be working, correctness testing will be needed.
 * Work on what the verify() function will look like
-* Look at state of the art binary search trees
-
-On a small scale sequential test the root hash matches what would be expected by performing the hashed individually. 
 
 > Things to work on before Monday 
 >
@@ -30,5 +28,6 @@ Related Papers:
 
 Specific Use Cases:
 * Potentially intel secure file i/o, this will depend on thread safety when accessing the same file, but currently their "merkle-esque" tree is used in a sequential manner
+    * talk with Dr. Solihin about this use case
 * Apache Cassandra/ Amazon DynamoDB both use merkle trees. I haven't dived too deep into how they are utilized. For DynamoDB it looked like they were using a merkle tree to help recover from crashes. If this is the case, it would stand to reason that having a concurrent version would allow them to more efficiently load information into the data structure.
 * Public key exchange (google Trillian)

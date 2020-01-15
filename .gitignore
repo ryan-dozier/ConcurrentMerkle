@@ -15,11 +15,13 @@ xcuserdata/
 *.o
 *.pyc
 
+cmake-build-*/
 
 #Python modules
 MANIFEST
 dist/
 build/
+_build/
 
 # Backup files
 *~.nib
