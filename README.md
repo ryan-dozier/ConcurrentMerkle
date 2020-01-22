@@ -1,6 +1,7 @@
 Implementation of a Concurrent Merkle Tree
 
 Todo List:
+* Insert working (mostly), look into how to handle hashes. if they need to be strings I need a way to modify them in a thread safe manner.
 * Test insert/delete when using multiple threads
     * insert may be working, correctness testing will be needed.
 * Work on what the verify() function will look like
