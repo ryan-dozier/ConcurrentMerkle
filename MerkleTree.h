@@ -31,13 +31,12 @@ class MerkleTree {
 public:
     class MerkleNode;
     class Descriptor;
-
+    
     //TODO: There may be a better wayt to declare this sentinal node value
     inline static MerkleNode* nullNode = nullptr;
-
+    
     //TODO: I would prefer to utilize different a different hashing function, but this will work for the moment.
     inline static std::hash<std::string> gen_key;
-    inline static std::hash<std::string> hash_hashes;
     
     MerkleTree() {
         this->root.store(new MerkleNode());
@@ -74,27 +73,40 @@ public:
     
     // checks if a value is in the tree.
     bool contains(T val) {
-        return this->contains(gen_key(val));
+        std::string hash = md5(std::to_string(*val));
+        size_t key = gen_key(hash);
+        return this->contains(hash, key);
     };
-    
-    // checks if a given hash is in the tree
-    bool contains(std::size_t hash);
     
     // returns the root hash value
     size_t getRootValue() { return root.load()->hash.load(); };
     
+    
+    void print_values() {
+        print_values(this->root.load());
+    }
 private:
     std::atomic<MerkleNode*> root;
     // The update function performs both inserts and removes depending on the parameters.
     void update(std::string* hash, size_t key, T &val);
-    void finishOp(Descriptor* job, Descriptor* old);
-    
+    void finishOp(Descriptor* job);
+    bool contains(std::string hash, std::size_t key);
     // helper deconstructor function.
     void post_delete(MerkleNode* node) {
         if (node != nullNode) {
             post_delete(node->left.load());
             post_delete(node->right.load());
+            delete node->hash.load();
             delete node;
+        }
+    }
+    void print_values(MerkleNode* node) {
+        if (node != nullNode) {
+            print_values(node->left.load());
+            print_values(node->right.load());
+            if(node->type == DATA) {
+                std::cout << *(node->val) << std::endl;
+            }
         }
     }
 };
@@ -102,7 +114,7 @@ private:
 template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
-
+    
     T val;
     std::size_t key;
     NodeType type;
@@ -133,7 +145,8 @@ public:
     };
     
     ~MerkleNode() {
-        delete this->hash.load();
+        // TODO: this is causing crashes, need to look at why
+        //delete this->hash.load();
         delete this->desc.load();
     };
     
@@ -181,24 +194,22 @@ private:
 template<typename T>
 void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     MerkleNode* walker = this->root.load();
-    short dir;
+    Direction dir;
     MerkleNode* next = nullptr;
     MerkleNode* newNode;
     Descriptor* newDesc;
     std::stack<MerkleTree<T>::MerkleNode*> visited;
     Descriptor* currentDesc;
     
-    //std::size_t key = hash;
     bool finished = false;
     
     while(!finished) {
         visited.push(walker);
         
         currentDesc = walker->desc.load();
-        finishOp(currentDesc, nullptr);
-            
-        dir = key % 2;
-        switch(dir) {
+        finishOp(currentDesc);
+        
+        switch(key % 2) {
             case LEFT :
                 next = walker->left.load();
                 dir = LEFT;
@@ -208,43 +219,22 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
                 dir = RIGHT;
                 break;
         }
-        key >>= 1;
-
+        
         if(next == nullptr) {
-            newNode = new MerkleNode(hash, key, val);
-            switch(dir) {
-                case LEFT :
-                    // TODO: this loop may be bad
-                    do {
-                        newDesc = new Descriptor(walker, newNode, LEFT);
-                        if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
-                            finished = true;
-                            finishOp(newDesc, currentDesc);
-                        } else {
-                            delete newDesc;
-                        }
-                        finished = true;
-                    } while (!finished || walker->left.load() == nullptr);
-                    break;
-                case RIGHT :
-                    // TODO: this loop may be bad
-                    do {
-                        newDesc = new Descriptor(walker, newNode, RIGHT);
-                        if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
-                            finished = true;
-                            finishOp(newDesc, currentDesc);
-                        } else {
-                            delete newDesc;
-                        }
-                        finished = true;
-                    } while (!finished || walker->right.load() == nullptr);
-                    break;
-            }
-            if(!finished)
+            
+            newNode = new MerkleNode(hash, key >> 1, val);
+            newDesc = new Descriptor(walker, newNode, dir);
+            if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
+                finishOp(newDesc);
+                finished = true;
+                delete currentDesc;
+            } else {
                 delete newNode;
+                delete newDesc;
+            }
         } else if (next->type == DATA) {
             // check if the data node is what we are inserting
-            if(next->hash.load() == hash && next->val == val) {
+            if(*next->val == *val) {
                 finished = true;
             } else {
                 newNode = new MerkleNode();
@@ -257,32 +247,19 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
                         break;
                 }
                 
-                switch(dir) {
-                    case LEFT :
-                        newDesc = new Descriptor(walker, newNode, next, LEFT, next->key >> 1);
-                        if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
-                            finishOp(newDesc, currentDesc);
-                            walker = newNode;
-                        } else {
-                            walker = walker->left.load();
-                            delete newNode;
-                            delete newDesc;
-                        }
-                        break;
-                    case RIGHT :
-                        newDesc = new Descriptor(walker, newNode, next, RIGHT, next->key >> 1);
-                        if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
-                            finishOp(newDesc, currentDesc);
-                            walker = newNode;
-                        } else {
-                            walker = walker->right.load();
-                            delete newNode;
-                            delete newDesc;
-                        }
-                        break;
+                newDesc = new Descriptor(walker, newNode, next, dir, next->key >> 1);
+                if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
+                    finishOp(newDesc);
+                    key >>= 1;
+                    walker = newNode;
+                    delete currentDesc;
+                } else {
+                    delete newNode;
+                    delete newDesc;
                 }
             }
         } else {
+            key >>= 1;
             walker = next;
         }
     } // end while
@@ -296,7 +273,7 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         MerkleNode* right;
         visited.pop();
         std::string* oldHash;
-
+        
         std::string* newVal = new std::string();
         do {
             //TODO: there may be a more efficient way to do this string arithmetic
@@ -305,7 +282,7 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
             oldHash = walker->hash.load();
             left = walker->left.load();
             right = walker->right.load();
-
+            
             // obtain the hashes from the child nodes
             if(left != nullptr) {
                 *newVal += *(left->hash.load());
@@ -324,63 +301,48 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
 }
 
 template<typename T>
-void MerkleTree<T>::finishOp(Descriptor* job, Descriptor* old) {
+void MerkleTree<T>::finishOp(Descriptor* job) {
+    std::atomic<MerkleNode*>* update_node;
     if(job->pending) {
+        
+        switch(job->dir) {
+            case LEFT :
+                update_node = &(job->parent->left);
+                break;
+            case RIGHT :
+                update_node = &(job->parent->right);
+                break;
+        }
+        
         switch(job->typeOp) {
             case HASH :
-                switch(job->dir) {
-                    case LEFT :
-                        if(job->parent->left.compare_exchange_weak(job->oldChild, job->child)) {
-                            job->oldChild->key = job->key;
-                            if(old != nullptr)
-                                delete old;
-                        }
-                        break;
-                    case RIGHT :
-                        if(job->parent->right.compare_exchange_weak(job->oldChild, job->child)) {
-                            job->oldChild->key = job->key;
-                            if(old != nullptr)
-                                delete old;
-                        }
-                        break;
-                }
-                
+                update_node->compare_exchange_weak(job->oldChild, job->child);
+                job->oldChild->key = job->key;
                 break;
             case DATA :
-                switch(job->dir) {
-                    case LEFT :
-                        if(job->parent->left.compare_exchange_weak(nullNode, job->child)){
-                            if(old != nullptr)
-                                delete old;
-                        }
-                            
-                        break;
-                    case RIGHT :
-                        if(job->parent->right.compare_exchange_weak(nullNode, job->child)) {
-                            if(old != nullptr)
-                                delete old;
-                        }
-                        break;
-                }
+                update_node->compare_exchange_weak(nullNode, job->child);
                 break;
         }
         job->pending = false;
     }
+    
 }
 
 
 
 template<typename T>
-bool MerkleTree<T>::contains(std::size_t hash) {
+bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
     bool result = false;
-    size_t key = hash;
     MerkleNode* walker = this->root.load();
     for (int i = 0; i < MAXBITS && walker != nullNode; i++) {
         
+        if(walker == nullptr)
+            return result;
+        
         // Arrived at a leaf node.
-        if (walker->val.load() != NULL) {
+        if (walker->type == DATA) {
             // check if the leaf contains the correct value
-            if (walker->hash.load() == hash)
+            if (walker->hash.load()->compare(hash) == 0)
                 result = true;
             // break from the loop, if the hash was not equal the value is not in the tree as we are at the bottom
             break;
