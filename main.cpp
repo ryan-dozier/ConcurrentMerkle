@@ -14,14 +14,11 @@
 #include "md5.h"
 #include "bigInt.h"
 
-#define SHOW_BIG_INT(x) std::cout << #x << " : Hex Value = " << x.toStr0xHex() << ", Hex Digits = " << x.getActualHexDigits() << "; Dec Value = " << x.toStrDec() << ", Dec Digits = " << x.getActualDecDigits() << std::endl << std::endl
-#define SHOW_DOUBLE(x) std::cout << #x << " : " << std::fixed << x << std::endl << std::endl
 
 void work(int thread_id, int num_ops, MerkleTree<int*> *tree)
 {
     int base = thread_id * num_ops;
-    for (int i = 0; i < num_ops; i++)
-    {
+    for (int i = 0; i < num_ops; i++) {
         int* nextItem = new int(base + i);
         tree->insert(nextItem);
     }
@@ -30,9 +27,6 @@ void work(int thread_id, int num_ops, MerkleTree<int*> *tree)
 int main(int argc, const char * argv[]) {
     // insert code here...
     auto* tree = new MerkleTree<int*>();
-    
-    BigInt::Rossi n2 ("224f3e07282886cce82404b6f8", BigInt::HEX_DIGIT);
-    SHOW_BIG_INT(n2);
     
     std::vector<std::thread> threads;
     int NUM_OP = 10000;
