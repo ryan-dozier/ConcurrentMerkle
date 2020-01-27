@@ -12,8 +12,7 @@
 #include <time.h>
 #include "MerkleTree.h"
 #include "md5.h"
-#include "bigInt.h"
-
+#include "sha256.h"
 
 void work(int thread_id, int num_ops, MerkleTree<int*> *tree)
 {
@@ -22,15 +21,21 @@ void work(int thread_id, int num_ops, MerkleTree<int*> *tree)
         int* nextItem = new int(base + i);
         tree->insert(nextItem);
     }
+    
+    for (int i = 0; i < num_ops; i++) {
+        int* temp = new int(base + i);
+        delete temp;
+    }
 }
 
 int main(int argc, const char * argv[]) {
     // insert code here...
-    auto* tree = new MerkleTree<int*>();
+    auto* tree = new MerkleTree<int*>(sha256);
     
     std::vector<std::thread> threads;
     int NUM_OP = 10000;
-    int NUM_THREADS = 4;
+    int NUM_THREADS = 8;
+    std::cout << "Beginning Test" << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < NUM_THREADS; i++) {
@@ -40,22 +45,29 @@ int main(int argc, const char * argv[]) {
         t.join();
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = end-start;
+    std::cout << "Threads Joined" << std::endl;
+    std::cout << std::endl << "Execution Stats" << std::endl;
+
     std::chrono::duration<double> seconds = elapsed;
-    auto throughput = (NUM_OP * NUM_THREADS) / seconds.count();
-    std::cout << throughput << std::endl;
+    auto throughput = 2 * (NUM_OP * NUM_THREADS) / seconds.count();
+    std::cout << "Root->val = 0x" << tree->getRootValue() << std::endl;
+    std::cout << "Throughput    :\t" << throughput << " ops/sec" << std::endl;
+    std::cout << "Hash Validity :\t";
     if(tree->validate()) {
-        std::cout << "Tree Verified" << std::endl;
+        std::cout << "Verified" << std::endl;
+        
     } else {
-        std::cout << "Invalid Tree" << std::endl;
+        std::cout << "Invalid" << std::endl;
     }
     
+    std::cout << "Data Validity :\t";
     bool containsAll = true;
     bool printed = false;
     for(int i = 0; i < NUM_OP * NUM_THREADS; i++) {
         int* temp = &i;
         if(!tree->contains(temp)) {
             if(!printed)
-                std::cout << "Tree Lost Data" << std::endl;
+                std::cout << "Incorrect" << std::endl;
             printed = true;
 
             containsAll = false;
@@ -63,7 +75,7 @@ int main(int argc, const char * argv[]) {
         }
     }
     if(containsAll) {
-        std::cout << "Tree Contains All Inserts" << std::endl;
+        std::cout << "Correct" << std::endl;
     } else {
         tree->print_values();
     }
