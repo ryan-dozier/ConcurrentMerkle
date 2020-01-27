@@ -21,24 +21,15 @@ void parallel_work(int thread_id, int num_ops, Concurrent::MerkleTree<int*> *tre
     for (int i = 0; i < num_ops; i++) {
         int* nextItem = new int(base + i);
         tree->insert(nextItem);
+        tree->contains(nextItem);
+        tree->contains(nextItem);
     }
-    
-    for (int i = 0; i < num_ops; i++) {
-        int* temp = new int(base + i);
-        tree->contains(temp);
-        delete temp;
-    }
-}
-
-void sequential_work(int thread_id, int num_ops, Sequential::MerkleTree<int> *tree)
-{
-    int base = thread_id * num_ops;
-    for (int i = 0; i < num_ops; i++) {
-        tree->insert(int(base + i));
-    }
-    
-    for (int i = 0; i < num_ops; i++) {
-        tree->contains(int(base + i));
+    for(int j = 0; j < 5; j++) {
+        for (int i = 0; i < num_ops; i++) {
+            int* temp = new int(base + i);
+            tree->contains(temp);
+            delete temp;
+        }
     }
 }
 
@@ -61,7 +52,7 @@ double parallel_benchmark(int NUM_OP, int NUM_THREADS) {
     std::cout << "Execution Stats" << std::endl;
 
     std::chrono::duration<double> seconds = elapsed;
-    auto throughput = 2 * (NUM_OP * NUM_THREADS) / seconds.count();
+    auto throughput = 8 * (NUM_OP * NUM_THREADS) / seconds.count();
     std::cout << "\troot->val = 0x" << tree->getRootValue() << std::endl;
     std::cout << "\tThroughput    :\t" << throughput << " ops/sec" << std::endl;
     std::cout << "\tHash Validity :\t";
@@ -75,14 +66,13 @@ double parallel_benchmark(int NUM_OP, int NUM_THREADS) {
     bool containsAll = true;
     bool printed = false;
     for(int i = 0; i < NUM_OP * NUM_THREADS; i++) {
-        int* temp = &i;
-        if(!tree->contains(temp)) {
+        if(!tree->contains(&i)) {
             if(!printed)
                 std::cout << "\tMissing:" << std::endl;
             printed = true;
 
             containsAll = false;
-            std::cout << "\t\t" << *temp << std::endl;
+            std::cout << "\t\t" << i << std::endl;
         }
     }
     std::cout << "\tData Validity :\t";
@@ -97,9 +87,27 @@ double parallel_benchmark(int NUM_OP, int NUM_THREADS) {
     return throughput;
 }
 
+void sequential_work(int thread_id, int num_ops, Sequential::MerkleTree<int*> *tree)
+{
+    int base = thread_id * num_ops;
+    for (int i = 0; i < num_ops; i++) {
+        int* nextItem = new int(base + i);
+        tree->insert(nextItem);
+        tree->contains(nextItem);
+        tree->contains(nextItem);
+    }
+    
+    for(int j = 0; j < 5; j++) {
+        for (int i = 0; i < num_ops; i++) {
+            int* temp = new int(base + i);
+            tree->contains(temp);
+            delete temp;
+        }
+    }
+}
 
 double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
-    auto* tree = new Sequential::MerkleTree<int>(sha256);
+    auto* tree = new Sequential::MerkleTree<int*>(sha256);
     
     std::vector<std::thread> threads;
     std::cout << std::endl << "Coarse Grained Benchmark" << std::endl;
@@ -118,7 +126,7 @@ double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
     std::cout << "Execution Stats" << std::endl;
 
     std::chrono::duration<double> seconds = elapsed;
-    auto throughput = 2 * (NUM_OP * NUM_THREADS) / seconds.count();
+    auto throughput = 8 * (NUM_OP * NUM_THREADS) / seconds.count();
     std::cout << "\troot->val = 0x" << tree->getRootValue() << std::endl;
     std::cout << "\tThroughput    :\t" << throughput << " ops/sec" << std::endl;
     std::cout << "\tHash Validity :\t";
@@ -131,7 +139,7 @@ double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
     
     bool containsAll = true;
     for(int i = 0; i < NUM_OP * NUM_THREADS; i++) {
-        if(!tree->contains(i)) {
+        if(!tree->contains(&i)) {
             containsAll = false;
             std::cout << "Missing: " << i << std::endl;
         }
@@ -141,7 +149,8 @@ double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
         std::cout << "Correct" << std::endl;
     } else {
         std::cout << "Incorrect" << std::endl;
-        //tree->print_values();
+        // Debugging Purposes
+        // tree->print_values();
     }
 
     delete tree;
@@ -149,9 +158,16 @@ double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
 }
 
 int main(int argc, const char * argv[]) {
-    // insert code here...
     int NUM_OP = 10000;
-    int NUM_THREADS = 8;
+    int NUM_THREADS = 4;
+    
+    if(argc == 3) {
+        NUM_OP = atoi(argv[1]);
+        NUM_THREADS = atoi(argv[2]);
+    } else {
+        std::cout << "Using Default Enviornment." << std::endl;
+        std::cout << "To define user parameters use .\\<program> <num ops> <thread count>" << std::endl << std::endl;
+    }
     
     std::cout << "Starting Benchmarks" << std::endl;
     std::cout << "\tThread Count\t: " << NUM_THREADS << std::endl;
@@ -162,12 +178,10 @@ int main(int argc, const char * argv[]) {
     auto sequential_throughput = sequential_benchmark(NUM_OP, NUM_THREADS);
     
     std::cout << std::endl << "Concurrent vs Sequential" << std::endl;
-    double percent_diff = (concurrent_throughput / sequential_throughput * 100);
-    if(concurrent_throughput > sequential_throughput)
-        std::cout << "\tConcurrent ran\t: " << percent_diff  << "% faster." << std::endl;
-    else if(concurrent_throughput < sequential_throughput)
-        std::cout << "\tConcurrent ran\t: " << (100 - percent_diff) << "% slower." << std::endl;
-    else
+    
+    double percent_diff = ((concurrent_throughput - sequential_throughput) / sequential_throughput * 100);
+    std::cout << "\tConcurrent ran\t: " << percent_diff  << "% faster." << std::endl;
+    if(percent_diff == 0)
         std::cout << "\tSomehow they had equal throughput\t: ¯\\_(ツ)_/¯" << std::endl;
     std::cout << std::endl << "Benchmark Completed" << std::endl << "\t";
     return 0;

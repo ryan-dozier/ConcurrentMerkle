@@ -36,7 +36,7 @@ public:
     // Inserts a value into the tree
     void insert(T v) {
         this->lock.lock();
-        std::string hash = hashFunc(std::to_string(v));
+        std::string hash = hashFunc(std::to_string(*v));
         size_t key = gen_key(hash);
         this->update(this->root, hash, key, v);
         this->lock.unlock();
@@ -63,7 +63,7 @@ public:
     // checks if a value is in the tree.
     bool contains(T val) {
         this->lock.lock();
-        std::string hash = hashFunc(std::to_string(val));
+        std::string hash = hashFunc(std::to_string(*val));
         size_t key = gen_key(hash);
         bool result = this->contains(this->root, hash, key);
         this->lock.unlock();
@@ -75,13 +75,13 @@ public:
     }
     
 private:
+    MerkleNode* root;
     std::mutex lock;
-    void update(MerkleNode* walker, std::string hash, size_t key, T val);
-    bool contains(MerkleNode* walker, std::string hash, std::size_t key);
     std::string (*hashFunc)(std::string);
     std::hash<std::string> gen_key;
-    MerkleNode* root;
-    
+
+    void update(MerkleNode* walker, std::string hash, size_t key, T val);
+    bool contains(MerkleNode* walker, std::string hash, std::size_t key);
     bool validate(MerkleNode* node);
     
     void print_values(MerkleNode* node) {
@@ -101,7 +101,6 @@ private:
             delete node;
         }
     }
-    
 };
 
 template<typename T>
@@ -131,7 +130,6 @@ public:
     T val;
     std::size_t key;
     NodeType type;
-    //TODO: This likely should be changed to be a string, but c++ doesnt have atomic string support. will have to think about this.
     std::string hash;
     MerkleNode* left;
     MerkleNode* right;
@@ -148,7 +146,6 @@ bool MerkleTree<T>::contains(MerkleNode* walker, std::string hash, std::size_t k
         else
             return false;
     }
-    
     switch (key % 2) {
         case LEFT :
             return contains(walker->left, hash, key >> 1);
@@ -157,6 +154,10 @@ bool MerkleTree<T>::contains(MerkleNode* walker, std::string hash, std::size_t k
             return contains(walker->right, hash, key >> 1);
             break;
     }
+    
+    //  This line of code never runs. However, some warnings are generated without it. (reaching end of non-void function ect)
+    //  Should be return false; to be safe, but we're not pansies.
+    return true & false;
 }
 
 template<typename T>
@@ -210,7 +211,6 @@ void MerkleTree<T>::update(MerkleNode* walker, std::string hash, std::size_t key
                 this->update(newNode, hash, key >> 1, val);
                 break;
 
-
             case HASH :
                 this->update(next, hash, key >> 1, val);
                 break;
@@ -242,7 +242,7 @@ bool MerkleTree<T>::validate(MerkleNode* node) {
 
     switch(node->type) {
         case DATA :
-            newHash = sha256(std::to_string(node->val));
+            newHash = sha256(std::to_string(*node->val));
             break;
         case HASH :
             // obtain the hashes from the child nodes
