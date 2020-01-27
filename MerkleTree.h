@@ -5,25 +5,19 @@
 #ifndef MERKLETREE_H
 #define MERKLETREE_H
 
+#define MAXBITS sizeof(size_t) * 8
 
-// Check GCC
-#if __GNUC__
-#if __x86_64__ || __ppc64__
-#define ENVIRONMENT64
-#define MAXBITS 64
-#else
-#define ENVIRONMENT32
-#define MAXBITS 32
-#endif
-#endif
 
 #include <iostream>
 #include <atomic>
 #include <stack>
 #include <string>
 
+namespace Concurrent {
+
 enum Direction { LEFT, RIGHT };
 enum NodeType { HASH, DATA };
+
 
 template<typename T>
 class MerkleTree {
@@ -96,9 +90,12 @@ private:
             post_delete(node->left.load());
             post_delete(node->right.load());
             delete node->hash.load();
+            if(node->type == DATA)
+                delete node->val;
             delete node;
         }
     }
+    
     void print_values(MerkleNode* node) {
         if (node != nullNode) {
             print_values(node->left.load());
@@ -294,8 +291,9 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
             // updated the hash. Need to reload the values and recompute the hashes for the next iteration.
         } while(!walker->hash.compare_exchange_weak(oldHash, newVal));
         
-        // TODO: this may be the problem
-        delete oldHash;
+        // TODO: this is a memory leak, but need to think about how to solve it. The issue is oldhash could be referenced by other threads as they work.
+        // TODO: Thought 1 : maybe collect discareded old strings to remove later on,
+        //delete oldHash;
     }
 }
 
@@ -415,4 +413,5 @@ bool MerkleTree<T>::validate() {
     return result;
 }
 
+} // end Concurrent Namespace
 #endif //MERKLETREE_H
