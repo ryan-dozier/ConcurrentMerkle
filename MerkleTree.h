@@ -21,7 +21,6 @@
 #include <atomic>
 #include <stack>
 #include <string>
-#include "md5.h"
 
 enum Direction { LEFT, RIGHT };
 enum NodeType { HASH, DATA };
@@ -35,10 +34,8 @@ public:
     //TODO: There may be a better wayt to declare this sentinal node value
     inline static MerkleNode* nullNode = nullptr;
     
-    //TODO: I would prefer to utilize different a different hashing function, but this will work for the moment.
-    inline static std::hash<std::string> gen_key;
-    
-    MerkleTree() {
+    MerkleTree(std::string (*hash_func)(std::string)) {
+        this->hashFunc = hash_func;
         this->root.store(new MerkleNode());
     };
     // TODO: This needs a full traversal to delete all nodes, will work on this later
@@ -49,14 +46,14 @@ public:
     
     // Inserts a value into the tree
     void insert(T &v) {
-        std::string* hash = new std::string(md5(std::to_string(*v)));
+        std::string* hash = new std::string(hashFunc(std::to_string(*v)));
         size_t key = gen_key(*hash);
         this->update(hash, key, v);
     };
     
     // Removes a value into the tree
     void remove(T v) {
-        std::string* hash = new std::string(md5(std::to_string(v)));
+        std::string* hash = new std::string(hashFunc(std::to_string(v)));
         size_t key = gen_key(*hash);
         // TODO: this is probably wrong, will need to debug later
         T temp = NULL;
@@ -73,13 +70,13 @@ public:
     
     // checks if a value is in the tree.
     bool contains(T val) {
-        std::string hash = md5(std::to_string(*val));
+        std::string hash = hashFunc(std::to_string(*val));
         size_t key = gen_key(hash);
         return this->contains(hash, key);
     };
     
     // returns the root hash value
-    size_t getRootValue() { return root.load()->hash.load(); };
+    std::string getRootValue() { return *(root.load()->hash.load()); };
     
     
     void print_values() {
@@ -87,6 +84,8 @@ public:
     }
 private:
     std::atomic<MerkleNode*> root;
+    std::string (*hashFunc)(std::string);
+    std::hash<std::string> gen_key;
     // The update function performs both inserts and removes depending on the parameters.
     void update(std::string* hash, size_t key, T &val);
     void finishOp(Descriptor* job);
@@ -273,7 +272,6 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         MerkleNode* right;
         visited.pop();
         std::string* oldHash;
-        
         std::string* newVal = new std::string();
         do {
             //TODO: there may be a more efficient way to do this string arithmetic
@@ -284,18 +282,19 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
             right = walker->right.load();
             
             // obtain the hashes from the child nodes
-            if(left != nullptr) {
+            if(left != nullptr)
                 *newVal += *(left->hash.load());
-            }
-            if(right != nullptr) {
+    
+            if(right != nullptr)
                 *newVal += *(right->hash.load());
-            }
             
             // compute the new hashes
-            *newVal = md5(*newVal);
-            // Attempt to compare and swap the newly computed hash, if it fails another thread has updated the hash. Need to reload the
-            // values and recompute the hashes for the next iteration.
+            *newVal = hashFunc(*newVal);
+            // Attempt to compare and swap the newly computed hash, if it fails another thread has
+            // updated the hash. Need to reload the values and recompute the hashes for the next iteration.
         } while(!walker->hash.compare_exchange_weak(oldHash, newVal));
+        
+        // TODO: this may be the problem
         delete oldHash;
     }
 }
@@ -316,8 +315,8 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
         
         switch(job->typeOp) {
             case HASH :
-                update_node->compare_exchange_weak(job->oldChild, job->child);
                 job->oldChild->key = job->key;
+                update_node->compare_exchange_weak(job->oldChild, job->child);
                 break;
             case DATA :
                 update_node->compare_exchange_weak(nullNode, job->child);
@@ -407,7 +406,7 @@ bool MerkleTree<T>::validate() {
         if(right != nullNode)
             computed_hash += *(right->hash.load());
         
-        computed_hash = md5(computed_hash);
+        computed_hash = hashFunc(computed_hash);
         if(computed_hash.compare(*walker->hash.load()) != 0)
             result = false;
         
