@@ -1,0 +1,6 @@
+MTFS
+	primarily a network paper
+	no implementation, its a proposed system
+	somewhat vague on the actual file system implementation. 
+		can look to existing file systems and abstract to merkle tree usage
+	

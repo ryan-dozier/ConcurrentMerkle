@@ -43,6 +43,7 @@ double parallel_benchmark(int NUM_OP, int NUM_THREADS) {
     for (int i = 0; i < NUM_THREADS; i++) {
         threads.push_back(std::thread(parallel_work, i, NUM_OP, tree));
     }
+    
     for (std::thread &t : threads)
         t.join();
     
@@ -158,7 +159,7 @@ double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
 }
 
 int main(int argc, const char * argv[]) {
-    int NUM_OP = 10000;
+    int NUM_OP = 100000;
     int NUM_THREADS = 4;
     
     if(argc == 3) {
@@ -171,15 +172,23 @@ int main(int argc, const char * argv[]) {
     
     std::cout << "Starting Benchmarks" << std::endl;
     std::cout << "\tThread Count\t: " << NUM_THREADS << std::endl;
-    std::cout << "\tOps per Thread\t: " << NUM_OP << std::endl << std::endl;
+    std::cout << "\tOps per Thread\t: " << 8 * NUM_OP << std::endl << std::endl;
 
     
     auto concurrent_throughput = parallel_benchmark(NUM_OP, NUM_THREADS);
     auto sequential_throughput = sequential_benchmark(NUM_OP, NUM_THREADS);
     
-    std::cout << std::endl << "Concurrent vs Sequential" << std::endl;
-    
+    std::cout << std::endl << "Concurrent vs Sequential Throughput" << std::endl;
+    std::cout << "\t<timesdiff = parallel / sequential>" << std::endl;
+    auto timesDif = concurrent_throughput / sequential_throughput;
+    if(timesDif > 1)
+        std::cout << "\tParallel ran\t: " << (concurrent_throughput / sequential_throughput) << " times faster." << std::endl;
+    else
+        std::cout << "\tParallel ran\t: " << (1 - (concurrent_throughput / sequential_throughput)) << " times slower." << std::endl;
+
+
     double percent_diff = ((concurrent_throughput - sequential_throughput) / sequential_throughput * 100);
+    std::cout << "\t<%diff = (parallel - sequential) / sequential * 100.>" << std::endl;
     std::cout << "\tConcurrent ran\t: " << percent_diff  << "% faster." << std::endl;
     if(percent_diff == 0)
         std::cout << "\tSomehow they had equal throughput\t: ¯\\_(ツ)_/¯" << std::endl;

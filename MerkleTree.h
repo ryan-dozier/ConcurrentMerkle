@@ -32,7 +32,7 @@ public:
         this->hashFunc = hash_func;
         this->root.store(new MerkleNode());
     };
-    // TODO: This needs a full traversal to delete all nodes, will work on this later
+
     ~MerkleTree() {
         this->post_delete(root.load());
         delete nullNode;
@@ -71,11 +71,8 @@ public:
     
     // returns the root hash value
     std::string getRootValue() { return *(root.load()->hash.load()); };
+    void print_values() { print_values(this->root.load()); }
     
-    
-    void print_values() {
-        print_values(this->root.load());
-    }
 private:
     std::atomic<MerkleNode*> root;
     std::string (*hashFunc)(std::string);
@@ -85,7 +82,8 @@ private:
     void finishOp(Descriptor* job);
     bool contains(std::string hash, std::size_t key);
     // helper deconstructor function.
-    void post_delete(MerkleNode* node) {
+    void post_delete(MerkleNode* node)
+    {
         if (node != nullNode) {
             post_delete(node->left.load());
             post_delete(node->right.load());
@@ -96,7 +94,8 @@ private:
         }
     }
     
-    void print_values(MerkleNode* node) {
+    void print_values(MerkleNode* node)
+    {
         if (node != nullNode) {
             print_values(node->left.load());
             print_values(node->right.load());
@@ -114,7 +113,6 @@ public:
     T val;
     std::size_t key;
     NodeType type;
-    //TODO: This likely should be changed to be a string, but c++ doesnt have atomic string support. will have to think about this.
     std::atomic<std::string*> hash;
     std::atomic<Descriptor*> desc;
     std::atomic<MerkleNode*> left;
@@ -150,7 +148,8 @@ private:
 };
 
 template<typename T>
-class MerkleTree<T>::Descriptor {
+class MerkleTree<T>::Descriptor
+{
 public:
     bool pending;
     NodeType typeOp;
@@ -168,7 +167,7 @@ public:
         this->oldChild = _oldChild;
         this->dir = _dir;
         this->key = _key;
-    }
+    };
     
     Descriptor(MerkleNode* _parent, MerkleNode* _child, Direction _dir) {
         this->pending = true;
@@ -176,11 +175,11 @@ public:
         this->parent = _parent;
         this->child = _child;
         this->dir = _dir;
-    }
+    };
     
     Descriptor() {
         this->pending = false;
-    }
+    };
     
     ~Descriptor() {};
     
@@ -190,13 +189,13 @@ private:
 template<typename T>
 void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     MerkleNode* walker = this->root.load();
-    Direction dir;
     MerkleNode* next = nullptr;
     MerkleNode* newNode;
+    Descriptor* currentDesc;
     Descriptor* newDesc;
     std::stack<MerkleTree<T>::MerkleNode*> visited;
-    Descriptor* currentDesc;
-    
+    Direction dir;
+
     bool finished = false;
     
     while(!finished) {
@@ -217,7 +216,6 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         }
         
         if(next == nullptr) {
-            
             newNode = new MerkleNode(hash, key >> 1, val);
             newDesc = new Descriptor(walker, newNode, dir);
             if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
@@ -228,7 +226,8 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
                 delete newNode;
                 delete newDesc;
             }
-        } else if (next->type == DATA) {
+        }
+        else if (next->type == DATA) {
             // check if the data node is what we are inserting
             if(*next->val == *val) {
                 finished = true;
@@ -261,7 +260,8 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     } // end while
     
     // This section performs the hashing operations on the visited nodes simulating a recursive call stack.
-    while(!visited.empty()) {
+    while(!visited.empty())
+    {
         
         // Grab the top node from the stack
         walker = visited.top();
@@ -271,7 +271,7 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         std::string* oldHash;
         std::string* newVal = new std::string();
         do {
-            //TODO: there may be a more efficient way to do this string arithmetic
+            // TODO: there may be a more efficient way to do this string arithmetic
             *newVal = "";
             // grab a temporary copy of the hash, used to detect state changes
             oldHash = walker->hash.load();
@@ -325,16 +325,11 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
     
 }
 
-
-
 template<typename T>
 bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
     bool result = false;
     MerkleNode* walker = this->root.load();
-    for (int i = 0; i < MAXBITS && walker != nullNode; i++) {
-        
-        if(walker == nullptr)
-            return result;
+    while (walker != nullptr) {
         
         // Arrived at a leaf node.
         if (walker->type == DATA) {
