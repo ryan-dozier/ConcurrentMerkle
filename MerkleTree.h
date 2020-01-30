@@ -5,9 +5,6 @@
 #ifndef MERKLETREE_H
 #define MERKLETREE_H
 
-#define MAXBITS sizeof(size_t) * 8
-
-
 #include <iostream>
 #include <atomic>
 #include <stack>
@@ -15,10 +12,15 @@
 
 namespace Concurrent {
 
+// The tree has two child nodes, left and right.
 enum Direction { LEFT, RIGHT };
+// Merkle trees contain two types of nodes, HASH, and DATA
 enum NodeType { HASH, DATA };
 
-
+/**
+ * Class MerkleTree
+ *
+ */
 template<typename T>
 class MerkleTree {
 public:
@@ -28,12 +30,17 @@ public:
     //TODO: There may be a better wayt to declare this sentinal node value
     inline static MerkleNode* nullNode = nullptr;
     
+    /**
+     * Constructor to create a merkle tree object. The required parameter is a hashing function which takes an std::string
+     * and returns the hash as an std::string
+     */
     MerkleTree(std::string (*hash_func)(std::string)) {
         this->hashFunc = hash_func;
         this->root.store(new MerkleNode());
     };
 
     ~MerkleTree() {
+        // call recursive helper function
         this->post_delete(root.load());
         delete nullNode;
     };
@@ -69,21 +76,36 @@ public:
         return this->contains(hash, key);
     };
     
-    // returns the root hash value
+    // returns the value of the root hash
     std::string getRootValue() { return *(root.load()->hash.load()); };
+    
+    // prints all DATA Nodes in postorder traversal. (Mainly for debugging)
     void print_values() { print_values(this->root.load()); }
     
 private:
+    // root node
     std::atomic<MerkleNode*> root;
+    
+    // hash function
     std::string (*hashFunc)(std::string);
+    
+    // hashing function to generate node keys
     std::hash<std::string> gen_key;
+    
     // The update function performs both inserts and removes depending on the parameters.
     void update(std::string* hash, size_t key, T &val);
+    
+    // finishOp allows other executing threads to help finish the operation
     void finishOp(Descriptor* job);
+    
+    // underlying contains operation, it generates the hash / key we are looking for
     bool contains(std::string hash, std::size_t key);
-    // helper deconstructor function.
-    void post_delete(MerkleNode* node)
-    {
+    
+    /**
+    * This function does a postorder traversal of the tree and deallocates the used memory.
+    * It is NOT thread safe.
+    */
+    void post_delete(MerkleNode* node) {
         if (node != nullNode) {
             post_delete(node->left.load());
             post_delete(node->right.load());
@@ -92,10 +114,13 @@ private:
                 delete node->val;
             delete node;
         }
-    }
+    };
     
-    void print_values(MerkleNode* node)
-    {
+    /**
+     * Performs a postorder traversal and outputs all DATA nodes to the console.
+     * (primarily for debugging purposes)
+     */
+    void print_values(MerkleNode* node) {
         if (node != nullNode) {
             print_values(node->left.load());
             print_values(node->right.load());
@@ -103,9 +128,13 @@ private:
                 std::cout << *(node->val) << std::endl;
             }
         }
-    }
+    };
 };
 
+/**
+* Class MerkleNode
+*
+*/
 template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
@@ -147,6 +176,10 @@ public:
 private:
 };
 
+/**
+* Class Descriptor
+*
+*/
 template<typename T>
 class MerkleTree<T>::Descriptor
 {
@@ -195,7 +228,6 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     Descriptor* newDesc;
     std::stack<MerkleTree<T>::MerkleNode*> visited;
     Direction dir;
-
     bool finished = false;
     
     while(!finished) {
@@ -216,6 +248,9 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         }
         
         if(next == nullptr) {
+            // TODO: My idea here is to instead of generate new descriptors and new nodes to have update functions to change the needed values instead of allocating each time. We know that every node will need a descriptor and a node to insert. Thereore we should only allocate once as the nodes are not shared until they exist in the tree (ABA problem immunity).
+            // TODO: For MerkleNode The only value that changes is the key. I still will need to generate intermediary HASH nodes dynamically, but I can probably just do a constructor with NODE(hash, value) then do a set_key(key) before adding to the descriptor.
+            // TODO: For Descriptor I do need a way to change from DATA and HASH, two different update functions should solve this, or one that makes it more explicit.
             newNode = new MerkleNode(hash, key >> 1, val);
             newDesc = new Descriptor(walker, newNode, dir);
             if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
@@ -313,8 +348,8 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
         
         switch(job->typeOp) {
             case HASH :
-                job->oldChild->key = job->key;
-                update_node->compare_exchange_weak(job->oldChild, job->child);
+                if (update_node->compare_exchange_weak(job->oldChild, job->child))
+                    job->oldChild->key = job->key;
                 break;
             case DATA :
                 update_node->compare_exchange_weak(nullNode, job->child);
@@ -322,7 +357,6 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
         }
         job->pending = false;
     }
-    
 }
 
 template<typename T>
