@@ -147,6 +147,15 @@ public:
     std::atomic<MerkleNode*> left;
     std::atomic<MerkleNode*> right;
     
+    MerkleNode(std::string* _hash, T &v) {
+        this->val = v;
+        this->hash.store(_hash);
+        this->type = DATA;
+        this->desc.store(new Descriptor());
+        this->left.store(nullptr);
+        this->right.store(nullptr);
+    };
+    
     MerkleNode(std::string* _hash, size_t key, T &v) {
         this->val = v;
         this->hash.store(_hash);
@@ -223,7 +232,8 @@ template<typename T>
 void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     MerkleNode* walker = this->root.load();
     MerkleNode* next = nullptr;
-    MerkleNode* newNode;
+    MerkleNode* dataNode = new MerkleNode(hash, val);
+    MerkleNode* hashNode = nullptr;
     Descriptor* currentDesc;
     Descriptor* newDesc;
     std::stack<MerkleTree<T>::MerkleNode*> visited;
@@ -249,16 +259,16 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         
         if(next == nullptr) {
             // TODO: My idea here is to instead of generate new descriptors and new nodes to have update functions to change the needed values instead of allocating each time. We know that every node will need a descriptor and a node to insert. Thereore we should only allocate once as the nodes are not shared until they exist in the tree (ABA problem immunity).
-            // TODO: For MerkleNode The only value that changes is the key. I still will need to generate intermediary HASH nodes dynamically, but I can probably just do a constructor with NODE(hash, value) then do a set_key(key) before adding to the descriptor.
-            // TODO: For Descriptor I do need a way to change from DATA and HASH, two different update functions should solve this, or one that makes it more explicit.
-            newNode = new MerkleNode(hash, key >> 1, val);
-            newDesc = new Descriptor(walker, newNode, dir);
+            // TODO: For Descriptor I do need a way to change from DATA and HASH, two different update functions should solve this, or one that makes it more explicit. For descriptors we may be able to only allocate when we need one, have something like if(newDesc == nullptr) newDesc == new .... this would allow for reusing some nodes saving on some data allocation.
+            
+            // set the value of the new node's key
+            dataNode->key = key >> 1;
+            newDesc = new Descriptor(walker, dataNode, dir);
             if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
                 finishOp(newDesc);
                 finished = true;
                 delete currentDesc;
             } else {
-                delete newNode;
                 delete newDesc;
             }
         }
@@ -267,24 +277,24 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
             if(*next->val == *val) {
                 finished = true;
             } else {
-                newNode = new MerkleNode();
+                hashNode = new MerkleNode();
                 switch(next->key % 2) {
                     case LEFT :
-                        newNode->left.store(next);
+                        hashNode->left.store(next);
                         break;
                     case RIGHT :
-                        newNode->right.store(next);
+                        hashNode->right.store(next);
                         break;
                 }
                 
-                newDesc = new Descriptor(walker, newNode, next, dir, next->key >> 1);
+                newDesc = new Descriptor(walker, hashNode, next, dir, next->key >> 1);
                 if(walker->desc.compare_exchange_weak(currentDesc, newDesc)) {
                     finishOp(newDesc);
                     key >>= 1;
-                    walker = newNode;
+                    walker = hashNode;
                     delete currentDesc;
                 } else {
-                    delete newNode;
+                    delete hashNode;
                     delete newDesc;
                 }
             }
