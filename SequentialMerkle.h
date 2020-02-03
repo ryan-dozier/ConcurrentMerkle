@@ -263,6 +263,6 @@ bool MerkleTree<T>::validate(MerkleNode* node) {
         return true;
 }
 
-} // END namespace
+} // END Sequential namespace
 
 #endif /* SequentialMerkle_h */
