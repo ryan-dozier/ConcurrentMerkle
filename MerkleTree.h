@@ -137,16 +137,21 @@ private:
 
 /**
 * Class MerkleNode
-*
+* This class handles induvidual nodes within the merkle tree. Most items have been left as public for ease of use.
+* However, because this is a protected class, and the MerkleTree object only contains a MerkleNode as a private variable
+* nothing in this class can be modified by the user.
 */
 template<typename T>
 class MerkleTree<T>::MerkleNode {
 public:
-    
+    // What is stored by the tree
     T val;
+    // the "key" is the remaining path in the tree, as intermediary nodes are added this determines left/right
     std::size_t key;
+    // HASH or DATA, a HASH node points to other HASH or DATA nodes, and its value is the hash(child_hash_0 + ... child_hash_N)
     NodeType type;
     std::atomic<std::string*> hash;
+    // The description of a pending operation on this node, other threads can help complete it.
     std::atomic<Descriptor*> desc;
     std::atomic<MerkleNode*> left;
     std::atomic<MerkleNode*> right;
@@ -181,8 +186,6 @@ public:
     };
     
     ~MerkleNode() {
-        // TODO: this is causing crashes, need to look at why
-        //delete this->hash.load();
         delete this->desc.load();
     };
     
@@ -194,13 +197,17 @@ public:
 
 /**
 * Class Descriptor
-*
+* This class is used to describe pending operations that need to occur. Typically Descriptor objects are needed 
+* when multiple words need to be atomically modified atomically.
 */
 template<typename T>
 class MerkleTree<T>::Descriptor
 {
 public:
+    // Whether the operation has been completed
     bool pending;
+    // We have two types of operations, HASH node, and DATA node, there may be additional ones for remove.
+    // For each of these, the operation is slightly different.
     NodeType typeOp;
     MerkleNode* parent;
     MerkleNode* oldChild;
@@ -407,11 +414,15 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     }
 }
 
+
+// Allows threads to help complete a pending operation
 template<typename T>
 void MerkleTree<T>::finishOp(Descriptor* job) {
     if(job != nullptr) {
         std::atomic<MerkleNode*>* update_node;
+        // only try to finish the operation if pending
         if(job->pending) {
+            // This switch grabs the address atomic variable that will be updated.
             switch(job->dir) {
                 case LEFT :
                     update_node = &(job->parent->left);
@@ -422,14 +433,21 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
             }
             
             switch(job->typeOp) {
+                // For HASH operations, we are adding an intermediary HASH node between an existing HASH Node
+                // and a DATA node. (The insert operation must be along the same key path) This operation 
+                // requires two "atomic" operations. First we need to swap in the new intermediary node, then
+                // we need to modify the old DATA node's key value.
                 case HASH :
-                    if (update_node->compare_exchange_weak(job->oldChild, job->child))
+                    update_node->compare_exchange_weak(job->oldChild, job->child);
+                    if(job->oldChild->key != job->key)
                         job->oldChild->key = job->key;
                     break;
+                // For DATA node Operations we simply have to compare and swap in the new DATA node into the parent.
                 case DATA :
                     update_node->compare_exchange_weak(nullNode, job->child);
                     break;
             }
+            // Mark the job as completed.
             job->pending = false;
         }
     }
