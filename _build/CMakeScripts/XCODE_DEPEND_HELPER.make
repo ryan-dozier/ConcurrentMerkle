@@ -12,9 +12,19 @@ PostBuild.ConcurrentMerkle.Debug:
 	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/Debug/ConcurrentMerkle
 
 
+PostBuild.SetVerifier.Debug:
+/Users/admin/area67/ConcurrentMerkle/_build/Debug/SetVerifier:
+	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/Debug/SetVerifier
+
+
 PostBuild.ConcurrentMerkle.Release:
 /Users/admin/area67/ConcurrentMerkle/_build/Release/ConcurrentMerkle:
 	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/Release/ConcurrentMerkle
+
+
+PostBuild.SetVerifier.Release:
+/Users/admin/area67/ConcurrentMerkle/_build/Release/SetVerifier:
+	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/Release/SetVerifier
 
 
 PostBuild.ConcurrentMerkle.MinSizeRel:
@@ -22,9 +32,19 @@ PostBuild.ConcurrentMerkle.MinSizeRel:
 	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/MinSizeRel/ConcurrentMerkle
 
 
+PostBuild.SetVerifier.MinSizeRel:
+/Users/admin/area67/ConcurrentMerkle/_build/MinSizeRel/SetVerifier:
+	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/MinSizeRel/SetVerifier
+
+
 PostBuild.ConcurrentMerkle.RelWithDebInfo:
 /Users/admin/area67/ConcurrentMerkle/_build/RelWithDebInfo/ConcurrentMerkle:
 	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/RelWithDebInfo/ConcurrentMerkle
+
+
+PostBuild.SetVerifier.RelWithDebInfo:
+/Users/admin/area67/ConcurrentMerkle/_build/RelWithDebInfo/SetVerifier:
+	/bin/rm -f /Users/admin/area67/ConcurrentMerkle/_build/RelWithDebInfo/SetVerifier
 
 
 

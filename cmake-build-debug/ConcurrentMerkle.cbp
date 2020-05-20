@@ -37,6 +37,48 @@
 					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
+			<Target title="SetVerifier">
+				<Option output="/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/SetVerifier" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/admin/area67/ConcurrentMerkle/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 SetVerifier"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="SetVerifier/fast">
+				<Option output="/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/SetVerifier" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/admin/area67/ConcurrentMerkle/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 SetVerifier/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
 			<Target title="ConcurrentMerkle">
 				<Option output="/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/ConcurrentMerkle" prefix_auto="0" extension_auto="0"/>
 				<Option working_dir="/Users/admin/area67/ConcurrentMerkle/cmake-build-debug"/>
@@ -83,19 +125,30 @@
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/MerkleTree.h">
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
+		<Unit filename="/Users/admin/area67/ConcurrentMerkle/MerkleTreeVerifier.h">
+			<Option target="SetVerifier"/>
+		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/main.cpp">
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/md5.cpp">
+			<Option target="SetVerifier"/>
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/md5.h">
+			<Option target="SetVerifier"/>
+			<Option target="ConcurrentMerkle"/>
+		</Unit>
+		<Unit filename="/Users/admin/area67/ConcurrentMerkle/setMain.cpp">
+			<Option target="SetVerifier"/>
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/sha256.cpp">
+			<Option target="SetVerifier"/>
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/sha256.h">
+			<Option target="SetVerifier"/>
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/CMakeLists.txt">
