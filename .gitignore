@@ -25,3 +25,8 @@ _build/
 
 # Backup files
 *~.nib
+/.vs/ConcurrentMerkle/v16/Browse.VC.opendb
+/.vs/ConcurrentMerkle/v16/Browse.VC.db-wal
+/.vs/ConcurrentMerkle/v16/Browse.VC.db-shm
+/.vs/ConcurrentMerkle/v16/Browse.VC.db
+/.vs

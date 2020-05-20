@@ -10,10 +10,15 @@
 #include <stack>
 #include <string>
 
+/*
+#define ADD 1;
+#define REMOVE -1;
+*/
 namespace ConcurrentVerifier {
 
 // Merkle trees contain two types of nodes, HASH, and DATA
 enum NodeType { HASH, DATA };
+enum OpType { ADD = 1, REMOVE = -1 };
 
 /**
  * Class MerkleTree
@@ -52,7 +57,7 @@ public:
     void insert(T &v) {
         std::string* hash = new std::string(hashFunc(std::to_string(*v)));
         size_t key = gen_key(*hash);
-        this->update(hash, key, v);
+        this->update(hash, key, v, ADD);
     };
     
     // Removes a value into the tree
@@ -61,7 +66,7 @@ public:
         size_t key = gen_key(*hash);
         // TODO: this is probably wrong, will need to debug later
         T temp = NULL;
-        this->update(hash, key, temp);
+        this->update(hash, key, temp, REMOVE);
     };
     
     // TODO: This function will require a lot of thought as it will likely have to be blocking. I want to have
@@ -155,6 +160,7 @@ public:
     // HASH or DATA, a HASH node points to other HASH or DATA nodes, and its value is the hash(child_hash_0 + ... child_hash_N)
     NodeType type;
     std::atomic<std::string*> hash;
+    std::atomic<int> count;
     // The description of a pending operation on this node, other threads can help complete it.
     std::atomic<Descriptor*> desc;
     std::vector<std::atomic<MerkleNode*>*> children;
@@ -163,6 +169,7 @@ public:
         this->val = v;
         this->hash.store(_hash);
         this->type = DATA;
+        this->count.store(0);
         this->desc.store(nullptr);
         for(int i = 0; i < child_nodes; i++)
             this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
@@ -173,6 +180,7 @@ public:
         this->hash.store(_hash);
         this->key = key;
         this->type = DATA;
+        this->count.store(0);
         this->desc.store(nullptr);
         for(int i = 0; i < child_nodes; i++)
             this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
@@ -216,6 +224,7 @@ public:
     MerkleNode* parent;
     MerkleNode* oldChild;
     MerkleNode* child;
+    int newCount;
     int dir;
     size_t key;
     
@@ -235,9 +244,10 @@ public:
         this->key = _key;
     };
     
-    Descriptor(MerkleNode* _child) {
+    Descriptor(MerkleNode* _child, int _newCount) {
         this->pending = true;
         this->typeOp = DATA;
+        this->newCount = _newCount;
         this->child = _child;
     };
     
@@ -259,7 +269,7 @@ private:
 };
 
 template<typename T>
-void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val) {
+void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, OpType op) {
     // walks through the tree
     MerkleNode* walker = this->root.load();
     MerkleNode* next = nullptr;
