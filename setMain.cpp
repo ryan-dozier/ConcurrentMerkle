@@ -101,7 +101,7 @@ double parallel_benchmark(int num_index_bits, int NUM_OP, int NUM_THREADS) {
 }
 
 int main(int argc, const char * argv[]) {
-    int NUM_OP = 100000;
+    int NUM_OP = 1000;
     int NUM_THREADS = 4;
     
     if(argc == 3) {

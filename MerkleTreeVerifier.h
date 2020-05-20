@@ -102,7 +102,7 @@ private:
     std::hash<std::string> gen_key;
     
     // The update function performs both inserts and removes depending on the parameters.
-    void update(std::string* hash, size_t key, T &val);
+    void update(std::string* hash, size_t key, T &val, OpType op);
     
     // finishOp allows other executing threads to help finish the operation
     void finishOp(Descriptor* job);
@@ -165,11 +165,12 @@ public:
     std::atomic<Descriptor*> desc;
     std::vector<std::atomic<MerkleNode*>*> children;
     
-    MerkleNode(int child_nodes, std::string* _hash, T &v) {
+    MerkleNode(int child_nodes, std::string* _hash, T &v, OpType op) {
         this->val = v;
         this->hash.store(_hash);
         this->type = DATA;
-        this->count.store(0);
+        // TODO: check that op is the correct value
+        this->count.store(op);
         this->desc.store(nullptr);
         for(int i = 0; i < child_nodes; i++)
             this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
@@ -220,11 +221,12 @@ public:
     bool pending;
     // We have two types of operations, HASH node, and DATA node, there may be additional ones for remove.
     // For each of these, the operation is slightly different.
-    NodeType typeOp;
+    NodeType nodeType;
+    OpType opType;
     MerkleNode* parent;
     MerkleNode* oldChild;
     MerkleNode* child;
-    int newCount;
+    int prevCount;
     int dir;
     size_t key;
     
@@ -236,7 +238,7 @@ public:
     
     Descriptor(MerkleNode* _parent, MerkleNode* _child, MerkleNode* _oldChild, int _dir, size_t _key) {
         this->pending = true;
-        this->typeOp = HASH;
+        this->nodeType = HASH;
         this->parent = _parent;
         this->child = _child;
         this->oldChild = _oldChild;
@@ -244,15 +246,19 @@ public:
         this->key = _key;
     };
     
-    Descriptor(MerkleNode* _child, int _newCount) {
+    Descriptor(MerkleNode* _child, OpType _op) {
         this->pending = true;
-        this->typeOp = DATA;
-        this->newCount = _newCount;
+        this->nodeType = DATA;
         this->child = _child;
+        this->opType = _op;
     };
     
     ~Descriptor() {};
     
+    void setCount(int _update) {
+        this->prevCount = _update
+    };
+
     void setDataDescriptor(MerkleNode* _parent, int _dir) {
         this->parent = _parent;
         this->dir = _dir;
@@ -277,13 +283,12 @@ void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, O
     std::stack<MerkleTreeVerifier<T>::MerkleNode*> visited;
 
     // Allocate the Data node to insert
-    MerkleNode* dataNode = new MerkleNode(this->num_child, hash, val);
-    Descriptor* dataDesc = new Descriptor(dataNode);
+    MerkleNode* dataNode = new MerkleNode(this->num_child, hash, val, op);
+    Descriptor* dataDesc = new Descriptor(dataNode, op);
     
     // These are used if an intermediary node is needed
     MerkleNode* hashNode = nullptr;
     Descriptor* hashDesc = nullptr;
-    
     int dir;
     bool finished = false;
     
@@ -322,9 +327,10 @@ void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, O
             
             // check if the data node is what we are inserting
             // TODO: this is not entirely comprehensive as the hashes could be equal in the case of a remove operation. BUT string compare is slow, so will have to check equality without an expensive operation. Perhaps key == key, then if that is true compare the full hashes. if key == key we have a hash collision though which will cause problems.
-            if(*next->val == *val) {
-                // TODO: this is where we will end up performing the removal operation as well. ATM just insert works.
-                return;
+            if(*next->val == *val) { // TODO: once this is changed to long for hashes, a hash comparison is fine
+                // walker node is the target, all we have to do is modify the count then update the hashes.
+                walker->count.fetch_add(op);
+                finished = true;
             } else {
                 /**
                  * Next is currently at a differing DATA node along the path the inserted node
@@ -394,7 +400,7 @@ void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, O
                 current = walker->children[i]->load();
                 
                 // obtain the hashes from the child node
-                if(current != nullptr)
+                if(current != nullptr && current->count.load() > 0)
                     *newVal += *(current->hash.load());
             }
             
@@ -421,7 +427,7 @@ void MerkleTreeVerifier<T>::finishOp(Descriptor* job) {
             // This switch grabs the address atomic variable that will be updated.
             update_node = job->parent->children[job->dir % this->num_child];
 
-            switch(job->typeOp) {
+            switch(job->nodeType) {
                 // For HASH operations, we are adding an intermediary HASH node between an existing HASH Node
                 // and a DATA node. (The insert operation must be along the same key path) This operation 
                 // requires two "atomic" operations. First we need to swap in the new intermediary node, then

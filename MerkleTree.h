@@ -255,7 +255,7 @@ private:
 };
 
 template<typename T>
-void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
+void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val, OpType op) {
     // walks through the tree
     MerkleNode* walker = this->root.load();
     MerkleNode* next = nullptr;
