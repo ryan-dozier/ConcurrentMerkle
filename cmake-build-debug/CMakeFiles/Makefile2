@@ -53,11 +53,13 @@ CMAKE_BINARY_DIR = /Users/admin/area67/ConcurrentMerkle/cmake-build-debug
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
+all: CMakeFiles/SetVerifier.dir/all
 all: CMakeFiles/ConcurrentMerkle.dir/all
 
 .PHONY : all
 
 # The main recursive "clean" target.
+clean: CMakeFiles/SetVerifier.dir/clean
 clean: CMakeFiles/ConcurrentMerkle.dir/clean
 
 .PHONY : clean
@@ -68,18 +70,45 @@ preinstall:
 .PHONY : preinstall
 
 #=============================================================================
+# Target rules for target CMakeFiles/SetVerifier.dir
+
+# All Build rule for target.
+CMakeFiles/SetVerifier.dir/all:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/depend
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles --progress-num=6,7,8,9 "Built target SetVerifier"
+.PHONY : CMakeFiles/SetVerifier.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/SetVerifier.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 4
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/SetVerifier.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 0
+.PHONY : CMakeFiles/SetVerifier.dir/rule
+
+# Convenience name for target.
+SetVerifier: CMakeFiles/SetVerifier.dir/rule
+
+.PHONY : SetVerifier
+
+# clean rule for target.
+CMakeFiles/SetVerifier.dir/clean:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/clean
+.PHONY : CMakeFiles/SetVerifier.dir/clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/ConcurrentMerkle.dir
 
 # All Build rule for target.
 CMakeFiles/ConcurrentMerkle.dir/all:
 	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/depend
 	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles --progress-num=1,2,3,4 "Built target ConcurrentMerkle"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles --progress-num=1,2,3,4,5 "Built target ConcurrentMerkle"
 .PHONY : CMakeFiles/ConcurrentMerkle.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/ConcurrentMerkle.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 5
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/ConcurrentMerkle.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles 0
 .PHONY : CMakeFiles/ConcurrentMerkle.dir/rule

@@ -1,3 +1,4 @@
 /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles/rebuild_cache.dir
 /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles/SetVerifier.dir
 /Users/admin/area67/ConcurrentMerkle/cmake-build-debug/CMakeFiles/ConcurrentMerkle.dir

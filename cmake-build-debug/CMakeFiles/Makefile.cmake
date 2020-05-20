@@ -52,5 +52,6 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
+  "CMakeFiles/SetVerifier.dir/DependInfo.cmake"
   "CMakeFiles/ConcurrentMerkle.dir/DependInfo.cmake"
   )

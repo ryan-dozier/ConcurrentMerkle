@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named SetVerifier
+
+# Build rule for target.
+SetVerifier: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 SetVerifier
+.PHONY : SetVerifier
+
+# fast build rule for target.
+SetVerifier/fast:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/build
+.PHONY : SetVerifier/fast
+
+#=============================================================================
 # Target rules for targets named ConcurrentMerkle
 
 # Build rule for target.
@@ -150,6 +163,96 @@ main.cpp.s:
 	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+md5.o: md5.cpp.o
+
+.PHONY : md5.o
+
+# target to build an object file
+md5.cpp.o:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/md5.cpp.o
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/md5.cpp.o
+.PHONY : md5.cpp.o
+
+md5.i: md5.cpp.i
+
+.PHONY : md5.i
+
+# target to preprocess a source file
+md5.cpp.i:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/md5.cpp.i
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/md5.cpp.i
+.PHONY : md5.cpp.i
+
+md5.s: md5.cpp.s
+
+.PHONY : md5.s
+
+# target to generate assembly for a file
+md5.cpp.s:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/md5.cpp.s
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/md5.cpp.s
+.PHONY : md5.cpp.s
+
+setMain.o: setMain.cpp.o
+
+.PHONY : setMain.o
+
+# target to build an object file
+setMain.cpp.o:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/setMain.cpp.o
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.o
+.PHONY : setMain.cpp.o
+
+setMain.i: setMain.cpp.i
+
+.PHONY : setMain.i
+
+# target to preprocess a source file
+setMain.cpp.i:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/setMain.cpp.i
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.i
+.PHONY : setMain.cpp.i
+
+setMain.s: setMain.cpp.s
+
+.PHONY : setMain.s
+
+# target to generate assembly for a file
+setMain.cpp.s:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/setMain.cpp.s
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.s
+.PHONY : setMain.cpp.s
+
+sha256.o: sha256.cpp.o
+
+.PHONY : sha256.o
+
+# target to build an object file
+sha256.cpp.o:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/sha256.cpp.o
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/sha256.cpp.o
+.PHONY : sha256.cpp.o
+
+sha256.i: sha256.cpp.i
+
+.PHONY : sha256.i
+
+# target to preprocess a source file
+sha256.cpp.i:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/sha256.cpp.i
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/sha256.cpp.i
+.PHONY : sha256.cpp.i
+
+sha256.s: sha256.cpp.s
+
+.PHONY : sha256.s
+
+# target to generate assembly for a file
+sha256.cpp.s:
+	$(MAKE) -f CMakeFiles/SetVerifier.dir/build.make CMakeFiles/SetVerifier.dir/sha256.cpp.s
+	$(MAKE) -f CMakeFiles/ConcurrentMerkle.dir/build.make CMakeFiles/ConcurrentMerkle.dir/sha256.cpp.s
+.PHONY : sha256.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -158,10 +261,20 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
+	@echo "... SetVerifier"
 	@echo "... ConcurrentMerkle"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... md5.o"
+	@echo "... md5.i"
+	@echo "... md5.s"
+	@echo "... setMain.o"
+	@echo "... setMain.i"
+	@echo "... setMain.s"
+	@echo "... sha256.o"
+	@echo "... sha256.i"
+	@echo "... sha256.s"
 .PHONY : help
 
 

@@ -8,3 +8,12 @@ CMakeFiles/ConcurrentMerkle.dir/main.cpp.o: ../md5.h
 CMakeFiles/ConcurrentMerkle.dir/md5.cpp.o: ../md5.cpp
 CMakeFiles/ConcurrentMerkle.dir/md5.cpp.o: ../md5.h
 
+CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.o: ../MerkleTreeVerifier.h
+CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.o: ../SequentialMerkle.h
+CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.o: ../md5.h
+CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.o: ../setMain.cpp
+CMakeFiles/ConcurrentMerkle.dir/setMain.cpp.o: ../sha256.h
+
+CMakeFiles/ConcurrentMerkle.dir/sha256.cpp.o: ../sha256.cpp
+CMakeFiles/ConcurrentMerkle.dir/sha256.cpp.o: ../sha256.h
+
