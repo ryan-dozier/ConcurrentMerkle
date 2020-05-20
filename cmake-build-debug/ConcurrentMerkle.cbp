@@ -86,6 +86,18 @@
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/main.cpp">
 			<Option target="ConcurrentMerkle"/>
 		</Unit>
+		<Unit filename="/Users/admin/area67/ConcurrentMerkle/md5.cpp">
+			<Option target="ConcurrentMerkle"/>
+		</Unit>
+		<Unit filename="/Users/admin/area67/ConcurrentMerkle/md5.h">
+			<Option target="ConcurrentMerkle"/>
+		</Unit>
+		<Unit filename="/Users/admin/area67/ConcurrentMerkle/sha256.cpp">
+			<Option target="ConcurrentMerkle"/>
+		</Unit>
+		<Unit filename="/Users/admin/area67/ConcurrentMerkle/sha256.h">
+			<Option target="ConcurrentMerkle"/>
+		</Unit>
 		<Unit filename="/Users/admin/area67/ConcurrentMerkle/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>

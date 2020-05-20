@@ -10,10 +10,8 @@
 #include <stack>
 #include <string>
 
-namespace Concurrent {
+namespace ConcurrentVerifier {
 
-// The tree has two child nodes, left and right.
-enum Direction { LEFT, RIGHT };
 // Merkle trees contain two types of nodes, HASH, and DATA
 enum NodeType { HASH, DATA };
 
@@ -22,7 +20,7 @@ enum NodeType { HASH, DATA };
  *
  */
 template<typename T>
-class MerkleTree {
+class MerkleTreeVerifier {
     
 protected:
     class MerkleNode;
@@ -37,12 +35,14 @@ public:
      * Constructor to create a merkle tree object. The required parameter is a hashing function
      * which takes an std::string and returns the hash as an std::string
      */
-    MerkleTree(std::string (*hash_func)(std::string)) {
+    MerkleTreeVerifier(int index_bits, std::string (*hash_func)(std::string)) {
         this->hashFunc = hash_func;
-        this->root.store(new MerkleNode());
+        this->index_bits = index_bits;
+        this->num_child = 1 << index_bits;
+        this->root.store(new MerkleNode(this->num_child));
     };
 
-    ~MerkleTree() {
+    ~MerkleTreeVerifier() {
         // call recursive helper function
         this->post_delete(root.load());
         delete nullNode;
@@ -104,15 +104,18 @@ private:
     
     // underlying contains operation, it generates the hash / key we are looking for
     bool contains(std::string hash, std::size_t key);
-    
+
+    int num_child;
+    int index_bits;
+
     /**
     * This function does a postorder traversal of the tree and deallocates the used memory.
     * It is NOT thread safe.
     */
     void post_delete(MerkleNode* node) {
         if (node != nullNode) {
-            post_delete(node->left.load());
-            post_delete(node->right.load());
+            for(int i = 0; i < this->num_child; i++)
+                post_delete(node->children[i]->load());
             delete node->hash.load();
             if(node->type == DATA)
                 delete node->val;
@@ -126,8 +129,9 @@ private:
      */
     void print_values(MerkleNode* node) {
         if (node != nullNode) {
-            print_values(node->left.load());
-            print_values(node->right.load());
+            for(int i = 0; i < this->num_child; i++)
+                print_values(node->children[i].load());
+
             if(node->type == DATA) {
                 std::cout << *(node->val) << std::endl;
             }
@@ -142,7 +146,7 @@ private:
 * nothing in this class can be modified by the user.
 */
 template<typename T>
-class MerkleTree<T>::MerkleNode {
+class MerkleTreeVerifier<T>::MerkleNode {
 public:
     // What is stored by the tree
     T val;
@@ -153,36 +157,35 @@ public:
     std::atomic<std::string*> hash;
     // The description of a pending operation on this node, other threads can help complete it.
     std::atomic<Descriptor*> desc;
-    std::atomic<MerkleNode*> left;
-    std::atomic<MerkleNode*> right;
+    std::vector<std::atomic<MerkleNode*>*> children;
     
-    MerkleNode(std::string* _hash, T &v) {
+    MerkleNode(int child_nodes, std::string* _hash, T &v) {
         this->val = v;
         this->hash.store(_hash);
         this->type = DATA;
         this->desc.store(nullptr);
-        this->left.store(nullptr);
-        this->right.store(nullptr);
+        for(int i = 0; i < child_nodes; i++)
+            this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
     };
     
-    MerkleNode(std::string* _hash, size_t key, T &v) {
+    MerkleNode(int child_nodes, std::string* _hash, size_t key, T &v) {
         this->val = v;
         this->hash.store(_hash);
         this->key = key;
         this->type = DATA;
         this->desc.store(nullptr);
-        this->left.store(nullptr);
-        this->right.store(nullptr);
+        for(int i = 0; i < child_nodes; i++)
+            this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
     };
     
-    MerkleNode() {
+    MerkleNode(int child_nodes) {
         this->hash.store(new std::string(""));
         this->val = NULL;
         this->key = 0;
         this->type = HASH;
         this->desc.store(nullptr);
-        this->left.store(nullptr);
-        this->right.store(nullptr);
+        for(int i = 0; i < child_nodes; i++)
+            this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
     };
     
     ~MerkleNode() {
@@ -190,8 +193,9 @@ public:
     };
     
     void resetChildNodes() {
-        this->left.store(nullptr);
-        this->right.store(nullptr);
+        for(int i = 0; i < this->children.size(); i++) {
+            this->children[i]->store(nullptr);
+        }
     }
 };
 
@@ -201,7 +205,7 @@ public:
 * when multiple words need to be atomically modified atomically.
 */
 template<typename T>
-class MerkleTree<T>::Descriptor
+class MerkleTreeVerifier<T>::Descriptor
 {
 public:
     // Whether the operation has been completed
@@ -212,7 +216,7 @@ public:
     MerkleNode* parent;
     MerkleNode* oldChild;
     MerkleNode* child;
-    Direction dir;
+    int dir;
     size_t key;
     
     
@@ -221,7 +225,7 @@ public:
         this->typeOp = HASH;
     };
     
-    Descriptor(MerkleNode* _parent, MerkleNode* _child, MerkleNode* _oldChild, Direction _dir, size_t _key) {
+    Descriptor(MerkleNode* _parent, MerkleNode* _child, MerkleNode* _oldChild, int _dir, size_t _key) {
         this->pending = true;
         this->typeOp = HASH;
         this->parent = _parent;
@@ -239,12 +243,12 @@ public:
     
     ~Descriptor() {};
     
-    void setDataDescriptor(MerkleNode* _parent, Direction _dir) {
+    void setDataDescriptor(MerkleNode* _parent, int _dir) {
         this->parent = _parent;
         this->dir = _dir;
     };
     
-    void setHashDescriptor(MerkleNode* _parent, MerkleNode* _child, MerkleNode* _oldChild, Direction _dir, size_t _key) {
+    void setHashDescriptor(MerkleNode* _parent, MerkleNode* _child, MerkleNode* _oldChild, int _dir, size_t _key) {
         this->parent = _parent;
         this->child = _child;
         this->oldChild = _oldChild;
@@ -255,22 +259,22 @@ private:
 };
 
 template<typename T>
-void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
+void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val) {
     // walks through the tree
     MerkleNode* walker = this->root.load();
     MerkleNode* next = nullptr;
     Descriptor* currentDesc;
-    std::stack<MerkleTree<T>::MerkleNode*> visited;
+    std::stack<MerkleTreeVerifier<T>::MerkleNode*> visited;
 
     // Allocate the Data node to insert
-    MerkleNode* dataNode = new MerkleNode(hash, val);
+    MerkleNode* dataNode = new MerkleNode(this->num_child, hash, val);
     Descriptor* dataDesc = new Descriptor(dataNode);
     
     // These are used if an intermediary node is needed
     MerkleNode* hashNode = nullptr;
     Descriptor* hashDesc = nullptr;
     
-    Direction dir;
+    int dir;
     bool finished = false;
     
     while(!finished) {
@@ -284,22 +288,14 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
         
         
         // Determine which direction we need to traverse and load next based on the direction
-        switch(key % 2) {
-            case LEFT :
-                next = walker->left.load();
-                dir = LEFT;
-                break;
-            case RIGHT :
-                next = walker->right.load();
-                dir = RIGHT;
-                break;
-        }
+        dir = key % this->num_child;
+        next = walker->children[dir]->load();
         
         // In this function we stop if the next type is DATA or nullptr.
         // Therefore walker must be a HASH node, we can try to insert a DATA node at next
         if(next == nullptr) {
             // set the value of the new node's key
-            dataNode->key = key >> 1;
+            dataNode->key = key >> this->index_bits;
             dataDesc->setDataDescriptor(walker, dir);
             if(walker->desc.compare_exchange_weak(currentDesc, dataDesc)) {
                 // TODO: is there a chance dataDesc could be removed by here?
@@ -329,32 +325,25 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
                 // Check if we have an already allocated node
                 if(hashNode == nullptr) {
                     // Create a new node and descriptor
-                    hashNode = new MerkleNode();
-                    hashDesc = new Descriptor(walker, hashNode, next, dir, next->key >> 1);
+                    hashNode = new MerkleNode(this->num_child);
+                    hashDesc = new Descriptor(walker, hashNode, next, dir, next->key >> this->index_bits);
                 }
                 else {
                     // Clean the allocated node and reinitialize the descriptor
                     hashNode->resetChildNodes();
-                    hashDesc->setHashDescriptor(walker, hashNode, next, dir, next->key >> 1);
+                    hashDesc->setHashDescriptor(walker, hashNode, next, dir, next->key >> this->index_bits);
                 }
-                
+
                 // Check which direction next should be apended to the intermediary node
-                switch(next->key % 2) {
-                    case LEFT :
-                        hashNode->left.store(next);
-                        break;
-                    case RIGHT :
-                        hashNode->right.store(next);
-                        break;
-                }
-                
+                hashNode->children[next->key % this->num_child]->store(next);
+
                 // Try to swap the new descriptor
                 if(walker->desc.compare_exchange_weak(currentDesc, hashDesc)) {
                     // finish the operation
                     finishOp(hashDesc);
                     
                     // Get ready for the next loop iteration
-                    key >>= 1;
+                    key >>= this->index_bits;
                     walker = hashNode;
                     
                     // now that the old descriptor has been swapped, de-allocate it
@@ -367,7 +356,7 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
             }
         } else {
             // Still have HASH nodes to traverse, shift the key, set walker to next.
-            key >>= 1;
+            key >>= this->index_bits;
             walker = next;
         }
     } // end while
@@ -382,8 +371,7 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
     while(!visited.empty()) {
         // Grab the top node from the stack
         walker = visited.top();
-        MerkleNode* left;
-        MerkleNode* right;
+        MerkleNode* current;
         visited.pop();
         std::string* oldHash;
         std::string* newVal = new std::string();
@@ -392,15 +380,13 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
             *newVal = "";
             // grab a temporary copy of the hash, used to detect state changes
             oldHash = walker->hash.load();
-            left = walker->left.load();
-            right = walker->right.load();
-            
-            // obtain the hashes from the child nodes
-            if(left != nullptr)
-                *newVal += *(left->hash.load());
-    
-            if(right != nullptr)
-                *newVal += *(right->hash.load());
+            for(int i = 0; i < this->num_child; i++) {
+                current = walker->children[i]->load();
+                
+                // obtain the hashes from the child node
+                if(current != nullptr)
+                    *newVal += *(current->hash.load());
+            }
             
             // compute the new hashes
             *newVal = hashFunc(*newVal);
@@ -417,21 +403,14 @@ void MerkleTree<T>::update(std::string* hash, std::size_t key, T &val) {
 
 // Allows threads to help complete a pending operation
 template<typename T>
-void MerkleTree<T>::finishOp(Descriptor* job) {
+void MerkleTreeVerifier<T>::finishOp(Descriptor* job) {
     if(job != nullptr) {
         std::atomic<MerkleNode*>* update_node;
         // only try to finish the operation if pending
         if(job->pending) {
             // This switch grabs the address atomic variable that will be updated.
-            switch(job->dir) {
-                case LEFT :
-                    update_node = &(job->parent->left);
-                    break;
-                case RIGHT :
-                    update_node = &(job->parent->right);
-                    break;
-            }
-            
+            update_node = job->parent->children[job->dir % this->num_child];
+
             switch(job->typeOp) {
                 // For HASH operations, we are adding an intermediary HASH node between an existing HASH Node
                 // and a DATA node. (The insert operation must be along the same key path) This operation 
@@ -457,8 +436,8 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
  * TODO: I think I need to add support on contains to verify the hashes are consistant. This may be difficult as pending operations could be occuring.
  */
 template<typename T>
-bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
-    std::stack<MerkleTree<T>::MerkleNode*> visited;
+bool MerkleTreeVerifier<T>::contains(std::string hash, std::size_t key) {
+    std::stack<MerkleTreeVerifier<T>::MerkleNode*> visited;
     bool result = false;
     MerkleNode* walker = this->root.load();
     while (walker != nullptr) {
@@ -473,16 +452,10 @@ bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
         }
         
         // If there are further parent nodes determine which direction to continue the search and set the walker to the next node to search.
-        switch (key % 2) {
-            case LEFT :
-                walker = walker->left.load();
-                break;
-            case RIGHT :
-                walker = walker->right.load();
-                break;
-        }
+        walker = walker->children[key % this->num_child]->load();
+
         // decrement the key and continue.
-        key >>= 1;
+        key >>= this->index_bits;
     }
     
     // TODO: This is where the hashes likely need to be verified.
@@ -492,7 +465,7 @@ bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
 
 // TODO: This will not currently work with concurrent execution. However it does work sequentially for testing at the moment.
 template<typename T>
-bool MerkleTree<T>::validate() {
+bool MerkleTreeVerifier<T>::validate() {
     bool result = true;
     
     // create an empty stack and push root node
@@ -511,28 +484,27 @@ bool MerkleTree<T>::validate() {
         if(curr->val == NULL)
             order.push(curr);
         
-        // push left and right child of popped node to the stack
-        if (curr->left.load() != nullNode)
-            stk.push(curr->left.load());
-        
-        if (curr->right.load() != nullNode)
-            stk.push(curr->right.load());
+        for(int i = 0; i < this->num_child; i++) {
+            if (curr->children[i]->load() != nullNode)
+                stk.push(curr->children[i]->load());
+        }
     }
     
-    MerkleNode *walker, *left, *right;
+    MerkleNode *walker, *current;
     std::string computed_hash;
     
     //TODO: This could probably be optimized some.
     while (!order.empty()) {
         computed_hash = "";
         walker = order.top();
-        left = walker->left.load();
-        right = walker->right.load();
         
-        if(left != nullNode)
-            computed_hash += *(left->hash.load());
-        if(right != nullNode)
-            computed_hash += *(right->hash.load());
+        for(int i = 0; i < this->num_child; i++) {
+            current = walker->children[i]->load();
+            
+            // obtain the hashes from the child node
+            if(current != nullNode)
+                computed_hash += *(current->hash.load());
+        }
         
         computed_hash = hashFunc(computed_hash);
         if(computed_hash.compare(*walker->hash.load()) != 0)

@@ -61,7 +61,7 @@ public:
         size_t key = gen_key(*hash);
         // TODO: this is probably wrong, will need to debug later
         T temp = NULL;
-        this->update("", key, temp);
+        this->update(hash, key, temp);
     };
     
     // TODO: This function will require a lot of thought as it will likely have to be blocking. I want to have
@@ -453,12 +453,16 @@ void MerkleTree<T>::finishOp(Descriptor* job) {
     }
 }
 
+/**
+ * TODO: I think I need to add support on contains to verify the hashes are consistant. This may be difficult as pending operations could be occuring.
+ */
 template<typename T>
 bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
+    std::stack<MerkleTree<T>::MerkleNode*> visited;
     bool result = false;
     MerkleNode* walker = this->root.load();
     while (walker != nullptr) {
-        
+        visited.push(walker);
         // Arrived at a leaf node.
         if (walker->type == DATA) {
             // check if the leaf contains the correct value
@@ -480,6 +484,9 @@ bool MerkleTree<T>::contains(std::string hash, std::size_t key) {
         // decrement the key and continue.
         key >>= 1;
     }
+    
+    // TODO: This is where the hashes likely need to be verified.
+    
     return result;
 }
 

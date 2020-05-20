@@ -3,4 +3,8 @@
 
 CMakeFiles/ConcurrentMerkle.dir/main.cpp.o: ../MerkleTree.h
 CMakeFiles/ConcurrentMerkle.dir/main.cpp.o: ../main.cpp
+CMakeFiles/ConcurrentMerkle.dir/main.cpp.o: ../md5.h
+
+CMakeFiles/ConcurrentMerkle.dir/md5.cpp.o: ../md5.cpp
+CMakeFiles/ConcurrentMerkle.dir/md5.cpp.o: ../md5.h
 
