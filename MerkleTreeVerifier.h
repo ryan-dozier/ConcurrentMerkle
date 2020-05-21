@@ -9,11 +9,8 @@
 #include <atomic>
 #include <stack>
 #include <string>
+#include <boost/functional/hash.hpp>
 
-/*
-#define ADD 1;
-#define REMOVE -1;
-*/
 namespace ConcurrentVerifier {
 
 // Merkle trees contain two types of nodes, HASH, and DATA
@@ -33,7 +30,7 @@ protected:
     
 public:
     
-    //TODO: There may be a better wayt to declare this sentinal node value
+    //TODO: There may be a better way to declare this sentinal node value
     inline static MerkleNode* nullNode = nullptr;
     
     /**
@@ -97,7 +94,8 @@ private:
     
     // hash function
     std::string (*hashFunc)(std::string);
-    
+    boost::hash<std::string> hasher;
+
     // hashing function to generate node keys
     std::hash<std::string> gen_key;
     
@@ -256,7 +254,7 @@ public:
     ~Descriptor() {};
     
     void setCount(int _update) {
-        this->prevCount = _update
+        this->prevCount = _update;
     };
 
     void setDataDescriptor(MerkleNode* _parent, int _dir) {

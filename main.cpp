@@ -156,7 +156,7 @@ double sequential_benchmark(int NUM_OP, int NUM_THREADS) {
 int main(int argc, const char * argv[]) {
     int NUM_OP = 100000;
     int NUM_THREADS = 4;
-    
+
     if(argc == 3) {
         NUM_OP = atoi(argv[1]);
         NUM_THREADS = atoi(argv[2]);
