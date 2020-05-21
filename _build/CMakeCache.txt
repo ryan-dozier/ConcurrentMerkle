@@ -14,6 +14,18 @@
 # EXTERNAL cache entries
 ########################
 
+//Set to ON to enable debug output from FindBoost.
+Boost_DEBUG:BOOL=ON
+
+//Set to ON to get detailed information
+Boost_DETAILED_FAILURE_MSG:BOOL=ON
+
+//The directory containing a CMake configuration file for Boost.
+Boost_DIR:PATH=/usr/local/lib/cmake/Boost-1.72.0
+
+//Path to a file.
+Boost_INCLUDE_DIR:PATH=/usr/local/include
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=CMAKE_ADDR2LINE-NOTFOUND
 
@@ -202,6 +214,9 @@ ConcurrentMerkle_BINARY_DIR:STATIC=/Users/admin/area67/ConcurrentMerkle/_build
 //Value Computed by CMake
 ConcurrentMerkle_SOURCE_DIR:STATIC=/Users/admin/area67/ConcurrentMerkle
 
+//The directory containing a CMake configuration file for boost_headers.
+boost_headers_DIR:PATH=/usr/local/lib/cmake/boost_headers-1.72.0
+
 
 ########################
 # INTERNAL cache entries
@@ -209,6 +224,8 @@ ConcurrentMerkle_SOURCE_DIR:STATIC=/Users/admin/area67/ConcurrentMerkle
 
 //Stored Xcode object GUID
 ALL_BUILD_GUID_CMAKE:INTERNAL=52E3E7491C90415E8F927004
+//ADVANCED property for variable: Boost_DIR
+Boost_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_ADDR2LINE
 CMAKE_ADDR2LINE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_AR
@@ -334,10 +351,14 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Stored Xcode object GUID
 ConcurrentMerkle_GUID_CMAKE:INTERNAL=C63E39B7BF494DED896AFFC2
+//Details about finding Boost
+FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[/usr/local/lib/cmake/Boost-1.72.0/BoostConfig.cmake][c ][v1.72.0(1.72.0)]
 //Stored Xcode object GUID
 PROJECT_ConcurrentMerkle_GUID_CMAKE:INTERNAL=E0F34CC096F64D3DA7E1C1B6
 //Stored Xcode object GUID
 SetVerifier_GUID_CMAKE:INTERNAL=25F6F2273FAB4C1C9E3F385F
 //Stored Xcode object GUID
 ZERO_CHECK_GUID_CMAKE:INTERNAL=8B0DE4DB5B4A4CC68599EB64
+//ADVANCED property for variable: boost_headers_DIR
+boost_headers_DIR-ADVANCED:INTERNAL=1
 

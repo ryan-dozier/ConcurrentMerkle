@@ -10,13 +10,18 @@
 #include "sha256.h"
 #include "SequentialMerkle.h"
 #include <boost/functional/hash.hpp>
-/*
+
 int main(int argc, const char * argv[]) {
     auto* tree = new ConcurrentVerifier::MerkleTreeVerifier<int*>(2, sha256);
     int num_items = 10;
     for (int i = 0; i < num_items; i++) {
         int* nextItem = new int(i);
         tree->insert(nextItem);
+    }
+    
+    for (int i = 0; i < num_items; i++) {
+        int* nextItem = new int(i);
+        tree->remove(nextItem);
     }
     
     for (int i = 0; i < num_items; i++) {
@@ -27,9 +32,9 @@ int main(int argc, const char * argv[]) {
     std::cout << "hello world " << tree->getRootValue() << std::endl;
     return 0;
 }
-*/
 
 
+/*
 void parallel_work(int thread_id, int num_ops, ConcurrentVerifier::MerkleTreeVerifier<int*> *tree)
 {
     int numInserts = num_ops * .2;
@@ -102,7 +107,7 @@ double parallel_benchmark(int num_index_bits, int NUM_OP, int NUM_THREADS) {
 }
 
 int main(int argc, const char * argv[]) {
-    int NUM_OP = 1000;
+    int NUM_OP = 100000;
     int NUM_THREADS = 4;
 
     if(argc == 3) {
@@ -128,3 +133,4 @@ int main(int argc, const char * argv[]) {
     std::cout << std::endl << "Benchmark Completed" << std::endl << "\t";
     return 0;
 }
+*/

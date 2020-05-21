@@ -9,6 +9,7 @@
 #include <atomic>
 #include <stack>
 #include <string>
+#include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
 
 namespace ConcurrentVerifier {
@@ -52,18 +53,15 @@ public:
     
     // Inserts a value into the tree
     void insert(T &v) {
-        std::string* hash = new std::string(hashFunc(std::to_string(*v)));
-        size_t key = gen_key(*hash);
-        this->update(hash, key, v, ADD);
+        //std::string* hash = new std::string(hashFunc(std::to_string(*v)));
+        size_t hash = hasher(boost::lexical_cast<std::string>(*v));
+        this->update(hash, hash, v, ADD); // TODO: remove one of the parameters, hash == key for boost
     };
     
     // Removes a value into the tree
-    void remove(T v) {
-        std::string* hash = new std::string(hashFunc(std::to_string(v)));
-        size_t key = gen_key(*hash);
-        // TODO: this is probably wrong, will need to debug later
-        T temp = NULL;
-        this->update(hash, key, temp, REMOVE);
+    void remove(T &v) {
+        size_t hash = hasher(boost::lexical_cast<std::string>(*v));
+        this->update(hash, hash, v, REMOVE); // TODO: remove one of the parameters, hash == key for boost
     };
     
     // TODO: This function will require a lot of thought as it will likely have to be blocking. I want to have
@@ -75,14 +73,15 @@ public:
     bool validate();
     
     // checks if a value is in the tree.
-    bool contains(T val) {
-        std::string hash = hashFunc(std::to_string(*val));
-        size_t key = gen_key(hash);
-        return this->contains(hash, key);
+    bool contains(T v) {
+        //std::string hash = hashFunc(std::to_string(*val));
+        //size_t key = gen_key(hash);
+        size_t hash = hasher(boost::lexical_cast<std::string>(*v));
+        return this->contains(hash, hash); // TODO: remove one of the parameters, hash == key for boost
     };
     
     // returns the value of the root hash
-    std::string getRootValue() { return *(root.load()->hash.load()); };
+    std::size_t getRootValue() { return root.load()->hash.load(); };
     
     // prints all DATA Nodes in postorder traversal. (Mainly for debugging)
     void print_values() { print_values(this->root.load()); }
@@ -100,13 +99,13 @@ private:
     std::hash<std::string> gen_key;
     
     // The update function performs both inserts and removes depending on the parameters.
-    void update(std::string* hash, size_t key, T &val, OpType op);
+    void update(std::size_t hash, size_t key, T &val, OpType op);
     
     // finishOp allows other executing threads to help finish the operation
     void finishOp(Descriptor* job);
     
     // underlying contains operation, it generates the hash / key we are looking for
-    bool contains(std::string hash, std::size_t key);
+    bool contains(std::size_t hash, std::size_t key);
 
     int num_child;
     int index_bits;
@@ -119,7 +118,7 @@ private:
         if (node != nullNode) {
             for(int i = 0; i < this->num_child; i++)
                 post_delete(node->children[i]->load());
-            delete node->hash.load();
+            //delete node->hash.load();
             if(node->type == DATA)
                 delete node->val;
             delete node;
@@ -157,13 +156,13 @@ public:
     std::size_t key;
     // HASH or DATA, a HASH node points to other HASH or DATA nodes, and its value is the hash(child_hash_0 + ... child_hash_N)
     NodeType type;
-    std::atomic<std::string*> hash;
+    std::atomic<std::size_t> hash;
     std::atomic<int> count;
     // The description of a pending operation on this node, other threads can help complete it.
     std::atomic<Descriptor*> desc;
     std::vector<std::atomic<MerkleNode*>*> children;
     
-    MerkleNode(int child_nodes, std::string* _hash, T &v, OpType op) {
+    MerkleNode(int child_nodes, size_t _hash, T &v, OpType op) {
         this->val = v;
         this->hash.store(_hash);
         this->type = DATA;
@@ -174,7 +173,7 @@ public:
             this->children.push_back(new std::atomic<MerkleNode*>(nullptr));
     };
     
-    MerkleNode(int child_nodes, std::string* _hash, size_t key, T &v) {
+    MerkleNode(int child_nodes, size_t _hash, size_t key, T &v) {
         this->val = v;
         this->hash.store(_hash);
         this->key = key;
@@ -186,7 +185,7 @@ public:
     };
     
     MerkleNode(int child_nodes) {
-        this->hash.store(new std::string(""));
+        this->hash.store(0);
         this->val = NULL;
         this->key = 0;
         this->type = HASH;
@@ -273,7 +272,7 @@ private:
 };
 
 template<typename T>
-void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, OpType op) {
+void MerkleTreeVerifier<T>::update(std::size_t hash, std::size_t key, T &val, OpType op) {
     // walks through the tree
     MerkleNode* walker = this->root.load();
     MerkleNode* next = nullptr;
@@ -325,9 +324,9 @@ void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, O
             
             // check if the data node is what we are inserting
             // TODO: this is not entirely comprehensive as the hashes could be equal in the case of a remove operation. BUT string compare is slow, so will have to check equality without an expensive operation. Perhaps key == key, then if that is true compare the full hashes. if key == key we have a hash collision though which will cause problems.
-            if(*next->val == *val) { // TODO: once this is changed to long for hashes, a hash comparison is fine
+            if(next->hash == hash) { // TODO: once this is changed to long for hashes, a hash comparison is fine
                 // walker node is the target, all we have to do is modify the count then update the hashes.
-                walker->count.fetch_add(op);
+                next->count.fetch_add(op);
                 finished = true;
             } else {
                 /**
@@ -387,11 +386,11 @@ void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, O
         walker = visited.top();
         MerkleNode* current;
         visited.pop();
-        std::string* oldHash;
-        std::string* newVal = new std::string();
+        std::size_t oldHash;
+        std::size_t newVal;
         do {
             // TODO: there may be a more efficient way to do this string arithmetic
-            *newVal = "";
+            newVal = 0;
             // grab a temporary copy of the hash, used to detect state changes
             oldHash = walker->hash.load();
             for(int i = 0; i < this->num_child; i++) {
@@ -399,11 +398,11 @@ void MerkleTreeVerifier<T>::update(std::string* hash, std::size_t key, T &val, O
                 
                 // obtain the hashes from the child node
                 if(current != nullptr && current->count.load() > 0)
-                    *newVal += *(current->hash.load());
+                    newVal ^= current->hash.load();
             }
             
             // compute the new hashes
-            *newVal = hashFunc(*newVal);
+            newVal = hasher(boost::lexical_cast<std::string>(newVal));
             // Attempt to compare and swap the newly computed hash, if it fails another thread has
             // updated the hash. Need to reload the values and recompute the hashes for the next iteration.
         } while(!walker->hash.compare_exchange_weak(oldHash, newVal));
@@ -450,7 +449,7 @@ void MerkleTreeVerifier<T>::finishOp(Descriptor* job) {
  * TODO: I think I need to add support on contains to verify the hashes are consistant. This may be difficult as pending operations could be occuring.
  */
 template<typename T>
-bool MerkleTreeVerifier<T>::contains(std::string hash, std::size_t key) {
+bool MerkleTreeVerifier<T>::contains(std::size_t hash, std::size_t key) {
     std::stack<MerkleTreeVerifier<T>::MerkleNode*> visited;
     bool result = false;
     MerkleNode* walker = this->root.load();
@@ -459,7 +458,7 @@ bool MerkleTreeVerifier<T>::contains(std::string hash, std::size_t key) {
         // Arrived at a leaf node.
         if (walker->type == DATA) {
             // check if the leaf contains the correct value
-            if (walker->hash.load()->compare(hash) == 0)
+            if (walker->hash.load() == hash)
                 result = true;
             // break from the loop, if the hash was not equal the value is not in the tree as we are at the bottom
             break;
@@ -505,23 +504,23 @@ bool MerkleTreeVerifier<T>::validate() {
     }
     
     MerkleNode *walker, *current;
-    std::string computed_hash;
+    std::size_t computed_hash;
     
     //TODO: This could probably be optimized some.
     while (!order.empty()) {
-        computed_hash = "";
+        computed_hash = 0;
         walker = order.top();
         
         for(int i = 0; i < this->num_child; i++) {
             current = walker->children[i]->load();
             
             // obtain the hashes from the child node
-            if(current != nullNode)
-                computed_hash += *(current->hash.load());
+            if(current != nullNode && current->count.load() > 0)
+                computed_hash ^= current->hash.load();
         }
         
-        computed_hash = hashFunc(computed_hash);
-        if(computed_hash.compare(*walker->hash.load()) != 0)
+        computed_hash = hasher(boost::lexical_cast<std::string>(computed_hash));
+        if(computed_hash != walker->hash.load())
             result = false;
         
         order.pop();

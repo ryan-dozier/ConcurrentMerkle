@@ -23,6 +23,9 @@ TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Compiler/Clang.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Compiler/GNU.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/FindBoost.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/FindPackageHandleStandardArgs.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/FindPackageMessage.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Internal/CMakeCheckCompilerFlag.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Platform/Apple-AppleClang-C.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Platform/Apple-AppleClang-CXX.cmake))
@@ -32,6 +35,10 @@ TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Platform/Darwin-Initialize.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Platform/Darwin.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/Cellar/cmake/3.16.2/share/cmake/Modules/Platform/UnixPaths.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/lib/cmake/Boost-1.72.0/BoostConfig.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/lib/cmake/Boost-1.72.0/BoostConfigVersion.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/lib/cmake/boost_headers-1.72.0/boost_headers-config-version.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /usr/local/lib/cmake/boost_headers-1.72.0/boost_headers-config.cmake))
 
 /Users/admin/area67/ConcurrentMerkle/_build/CMakeFiles/cmake.check_cache: $(TARGETS)
 	/usr/local/Cellar/cmake/3.16.2/bin/cmake -H/Users/admin/area67/ConcurrentMerkle -B/Users/admin/area67/ConcurrentMerkle/_build
